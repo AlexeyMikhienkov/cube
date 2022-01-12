@@ -1,5 +1,5 @@
 {
-  "name": "three",
+  "name": "three-cube",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,9 +8,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "gsap": "^3.9.1",
     "next": "12.0.7",
     "react": "17.0.2",
-    "react-dom": "17.0.2"
+    "react-dom": "17.0.2",
+    "sass": "^1.47.0",
+    "three": "^0.136.0"
   },
   "devDependencies": {
     "eslint": "8.6.0",
