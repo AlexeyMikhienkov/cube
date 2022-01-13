@@ -41,15 +41,17 @@ export default class Game {
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
 
-        document.addEventListener('click', this.onClick);
+        this.renderer.domElement.addEventListener('click', this.onClick);
     }
 
     onClick = (event) => {
         const canvasWidth = this.renderer.domElement.clientWidth;
         const canvasHeight = this.renderer.domElement.clientHeight;
 
-        //TODO: канвас работает только для (0,0)
-        this.pointer.set((event.clientX / canvasWidth) * 2 - 1, - (event.clientY / canvasHeight) * 2 + 1);
+        this.pointer.set(
+            ((event.clientX - event.target.offsetLeft) / canvasWidth) * 2 - 1,
+            - ((event.clientY - event.target.offsetTop) / canvasHeight) * 2 + 1
+        );
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
 
@@ -57,38 +59,24 @@ export default class Game {
 
         const clickOffset = Math.PI / 2;
 
-        if (intersects.length > 0) {
-            const axis = this.chooseRandomAxis();
-            const offset = this.chooseRandomOffset(clickOffset);
+        const axis = ["x", "y", "z"];
 
-            const newValue = this.cube.rotation[axis] + offset;
+        if (intersects.length > 0) {
+            const randomAxis = axis[Math.floor(Math.random() * axis.length)];
+            const offset = Math.random() * clickOffset * 2 - clickOffset;
+
+            const newValue = this.cube.rotation[randomAxis] + offset;
 
             gsap.to(this.cube.rotation, {
-                [axis]: newValue,
+                [randomAxis]: newValue,
                 duration: 0.5,
                 ease: "sine.inOut",
-                onComplete: () => console.log(this.cube.rotation)
             });
-
-            console.log(axis, offset);
         }
     };
 
     chooseRandomOffset(offset) {
         return Math.random() * offset * 2 - offset;
-    }
-
-    chooseRandomAxis() {
-        const rnd = Math.floor(Math.random() * 3);
-
-        switch(rnd) {
-            case 0:
-                return "x";
-            case 1:
-                return "y";
-            case 2:
-                return "z";
-        }
     }
 
     createCube() {
@@ -97,8 +85,8 @@ export default class Game {
         const boxDepth = 1;
 
         const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-        const material = new THREE.MeshPhongMaterial({
-            color: 0x44aa72
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x000000
         });
 
         this.material = material;
