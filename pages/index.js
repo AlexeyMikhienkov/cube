@@ -6,14 +6,17 @@ export default function Home() {
 
     useEffect(() => {
         const promiseTHREE = import('../utils/three/three')
-            .then(() => import('../components/cube/game'));
+            .then(() => import('../components/cube/game'))
+            .then((data) => {
+                setLoaded(true);
+                return data;
+            });
+
         setImportPromise(promiseTHREE);
-        setLoaded(true)
     }, []);
 
-
     return (
-        loaded ? <Cube /> : <p>Loading...</p>
+        loaded ? <Cube/> : <p>Loading...</p>
     )
 }
 

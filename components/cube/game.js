@@ -1,13 +1,14 @@
-//import * as THREE from 'three'
 import gsap from "gsap"
 
 const {THREE} = global;
 
 export default class Game {
-    renderer;
-
     constructor() {
+        this.renderer = new THREE.WebGLRenderer({antialias: true});
+    }
 
+    appendContainer(container) {
+        container.appendChild(this.renderer.domElement);
     }
 
     init() {
@@ -47,6 +48,7 @@ export default class Game {
         const canvasWidth = this.renderer.domElement.clientWidth;
         const canvasHeight = this.renderer.domElement.clientHeight;
 
+        //TODO: канвас работает только для (0,0)
         this.pointer.set((event.clientX / canvasWidth) * 2 - 1, - (event.clientY / canvasHeight) * 2 + 1);
 
         this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -105,8 +107,6 @@ export default class Game {
         this.cube = cube;
 
         this.scene.add(cube);
-
-
     }
 
     addFog() {
@@ -116,7 +116,7 @@ export default class Game {
         this.scene.fog = new THREE.Fog(color, near, far);
     }
 
-    animate() {
+    animate = () => {
         const {cube, renderer, scene, camera} = this;
 
    /*     cube.rotation.x += 0.01;
@@ -124,10 +124,8 @@ export default class Game {
 
         renderer.render(scene, camera);
 
-        requestAnimationFrame(() => this.animate());
+        requestAnimationFrame(this.animate);
     }
 }
 
 export const game = new Game();
-
-// git remote set-url origin https://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@github.com/AlexeyMikhienkov/cube.git
