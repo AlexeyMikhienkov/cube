@@ -1,4 +1,5 @@
 import gsap from "gsap"
+import CustomBasicMaterial from "../../utils/three/CustomBasicMaterial";
 
 const {THREE} = global;
 
@@ -85,7 +86,7 @@ export default class Game {
         const boxDepth = 1;
 
         const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-        const material = new THREE.MeshBasicMaterial({
+        const material = new CustomBasicMaterial({
             color: 0x000000
         });
 
@@ -93,6 +94,8 @@ export default class Game {
 
         const cube = new THREE.Mesh(geometry, material);
         this.cube = cube;
+
+        console.log(cube)
 
         this.scene.add(cube);
     }
