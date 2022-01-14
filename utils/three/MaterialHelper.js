@@ -37,9 +37,6 @@ class MaterialHelper {
         }
 
         function _initUniforms(scope, uniform_name, uniform_data) {
-
-            console.log(scope, uniform_name, uniform_data)
-
             const { _uniforms } = scope;
 
             var default_setter;

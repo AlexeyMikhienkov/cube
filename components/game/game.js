@@ -2,7 +2,7 @@ import React, {useRef, useEffect} from "react";
 
 let importPromise;
 
-export default function Cube() {
+export default function Game() {
     const ref = useRef();
 
     useEffect(() => {

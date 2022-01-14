@@ -1,6 +1,10 @@
 import MaterialHelper from "./MaterialHelper";
 
 export default class CustomBasicMaterial extends THREE.MeshBasicMaterial {
+    /**
+     *
+     * @param data
+     */
     constructor(data) {
         super(data);
 

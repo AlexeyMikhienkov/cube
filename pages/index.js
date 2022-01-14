@@ -1,12 +1,12 @@
 import React, {useState, useEffect} from "react";
-import Cube, {setImportPromise} from "../components/cube/cube";
+import Game, {setImportPromise} from "../components/game/game";
 
 export default function Home() {
     const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         const promiseTHREE = import('../utils/three/three')
-            .then(() => import('../components/cube/game'))
+            .then(() => import('../components/game/src/gameController'))
             .then((data) => {
                 setLoaded(true);
                 return data;
@@ -16,7 +16,7 @@ export default function Home() {
     }, []);
 
     return (
-        loaded ? <Cube/> : <p>Loading...</p>
+        loaded ? <Game/> : <p>Loading...</p>
     )
 }
 
