@@ -4,6 +4,8 @@ import CustomBasicMaterial from "../../utils/three/CustomBasicMaterial";
 const {THREE} = global;
 
 export default class Game {
+    time;
+
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
     }
@@ -87,15 +89,14 @@ export default class Game {
 
         const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
         const material = new CustomBasicMaterial({
-            color: 0x000000
+            color: 0x000000,
+            time: this.time
         });
 
         this.material = material;
 
         const cube = new THREE.Mesh(geometry, material);
         this.cube = cube;
-
-        console.log(cube)
 
         this.scene.add(cube);
     }
@@ -107,11 +108,10 @@ export default class Game {
         this.scene.fog = new THREE.Fog(color, near, far);
     }
 
-    animate = () => {
-        const {cube, renderer, scene, camera} = this;
+    animate = (t) => {
+        const {renderer, scene, camera, cube} = this;
 
-   /*     cube.rotation.x += 0.01;
-        cube.rotation.y += 0.01;*/
+        cube.material.time = t;
 
         renderer.render(scene, camera);
 
