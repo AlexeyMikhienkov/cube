@@ -15,7 +15,9 @@ export default function Game() {
     //TODO: удалять сцену после удаления компонента
 
     return (
-        <div className={"cube-wrapper"} ref={ref}/>
+        <div className={"game"}>
+            <div className={"game__wrapper"} ref={ref}/>
+        </div>
     )
 }
 

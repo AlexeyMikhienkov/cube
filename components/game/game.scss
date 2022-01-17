@@ -1,6 +1,11 @@
-.cube-wrapper {
+.game {
+  width: 100vw;
+  height: 90vh;
+//  margin: 0 auto;
 
-  canvas {
-    margin: 0 auto;
+  &__wrapper {
+    width: 100%;
+    height: 100%;
   }
+
 }

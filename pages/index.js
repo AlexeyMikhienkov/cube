@@ -6,7 +6,7 @@ export default function Home() {
 
     useEffect(() => {
         const promiseTHREE = import('../utils/three/three')
-            .then(() => import('../components/game/src/gameController'))
+            .then(() => import('../components/game/src/GameController'))
             .then((data) => {
                 setLoaded(true);
                 return data;

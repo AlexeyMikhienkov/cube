@@ -1,12 +1,7 @@
 import CustomBasicMaterial from "../../../utils/three/CustomBasicMaterial";
 
-export default class Hero extends THREE.Object3D {
-    _geometry;
-    _material;
-
+export default class Hero extends THREE.Mesh {
     constructor(time) {
-        super();
-
         const boxWidth = 1;
         const boxHeight = 1;
         const boxDepth = 1;
@@ -17,11 +12,7 @@ export default class Hero extends THREE.Object3D {
             time
         });
 
-        const cube = new THREE.Mesh(geometry, material);
-        this.add(cube);
-
-        this._geometry = geometry;
-        this._material = material;
+        super(geometry, material);
     }
 
 }

@@ -1,5 +1,8 @@
 import gsap from "gsap"
-import Hero from "./hero";
+import Hero from "./Hero";
+import Field from "./Field";
+import {baseSettings} from "./settings";
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
 const {THREE} = global;
 
@@ -8,8 +11,11 @@ export default class GameController {
     renderer;
     camera;
     hero;
+    field;
     raycaster;
     pointer;
+    _width;
+    _height;
     time = 0;
 
     constructor() {
@@ -26,21 +32,57 @@ export default class GameController {
         this.initScene();
         this.initCamera();
 
-        renderer.setSize(600, 600);
         renderer.domElement.addEventListener('click', this.onClick);
 
         this.initHero();
-        this.initFog();
+        this.initField();
+        //   this.initFog();
         this.initRaycaster();
+        this.initHelpers();
+
+        this.resize();
 
         this.animate()
+    }
+
+    initHelpers() {
+        const {scene, camera, renderer} = this;
+
+        const axesHelper = new THREE.AxesHelper(3);
+        scene.add(axesHelper);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.update();
+    }
+
+    resize() {
+        const {renderer, camera} = this;
+        const parent = renderer.domElement.parentNode;
+
+        if (!parent) return;
+
+        const {clientWidth, clientHeight} = parent;
+        renderer.setSize(clientWidth, clientHeight);
+
+        camera.aspect = clientWidth / clientHeight;
+        camera.updateProjectionMatrix();
     }
 
     initHero() {
         const hero = new Hero(this.time);
 
+        hero.position.set(hero.geometry.parameters.height / 2, hero.geometry.parameters.height / 2, 0);
+
         this.hero = hero;
         this.scene.add(hero);
+    }
+
+    initField() {
+        const field = new Field(baseSettings.linesCount);
+
+        this.field = field;
+
+        field.initLines(this.scene);
     }
 
     initScene() {
@@ -52,12 +94,13 @@ export default class GameController {
 
     initCamera() {
         const fov = 75;
-        const aspect = 2;
-        const near = 0.5;
-        const far = 10;
+        const aspect = 1;
+        const near = 1;
+        const far = 20;
 
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-        camera.position.set(0, 0, 2);
+        camera.position.set(-3, 2.5, 0);
+        camera.rotation.set(-Math.PI / 2, -Math.PI / 4, -Math.PI / 2);
 
         this.camera = camera;
         this.scene.add(camera);
@@ -83,12 +126,12 @@ export default class GameController {
 
         pointer.set(
             ((event.clientX - event.target.offsetLeft) / canvasWidth) * 2 - 1,
-            - ((event.clientY - event.target.offsetTop) / canvasHeight) * 2 + 1
+            -((event.clientY - event.target.offsetTop) / canvasHeight) * 2 + 1
         );
 
         raycaster.setFromCamera(pointer, camera);
 
-        const intersects = raycaster.intersectObjects([hero], true);
+        const intersects = raycaster.intersectObjects([hero], false);
 
         const clickOffset = Math.PI / 2;
         const axis = ["x", "y", "z"];
@@ -107,10 +150,14 @@ export default class GameController {
         }
     };
 
+    //TODO: вынести параметр "на сколько видим поле"
     animate = (t) => {
         const {renderer, scene, camera, hero} = this;
 
-        hero._material.time = t;
+        hero.material.time = t;
+
+      //  hero.position.x += 0.05;
+      //  camera.position.x += 0.05;
 
         renderer.render(scene, camera);
 
