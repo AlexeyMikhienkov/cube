@@ -7,6 +7,13 @@ export const baseSettings = {
             width: 15,
             height: 1
         }
+    },
+    enemy: {
+        size: {
+            width: 0.8,
+            height: 0.8,
+            depth: 0.8,
+        }
     }
 };
 

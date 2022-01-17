@@ -3,6 +3,8 @@ import Hero from "./Hero";
 import Field from "./Field";
 import {baseSettings} from "./settings";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import Enemy from "./Enemy";
+import PathController from "./PathController";
 
 const {THREE} = global;
 
@@ -17,6 +19,7 @@ export default class GameController {
     _width;
     _height;
     time = 0;
+    pathController;
 
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
@@ -30,15 +33,18 @@ export default class GameController {
         const {renderer} = this;
 
         this.initScene();
+        this.initHero();
         this.initCamera();
 
         renderer.domElement.addEventListener('click', this.onClick);
 
-        this.initHero();
+
         this.initField();
         //   this.initFog();
         this.initRaycaster();
         this.initHelpers();
+
+        this.pathController = new PathController(this.field._lines.length);
 
         this.resize();
 
@@ -100,7 +106,7 @@ export default class GameController {
 
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         camera.position.set(-3, 2.5, 0);
-        camera.rotation.set(-Math.PI / 2, -Math.PI / 4, -Math.PI / 2);
+        camera.lookAt(this.hero.position.x, this.hero.position.y, this.hero.position.z);
 
         this.camera = camera;
         this.scene.add(camera);
@@ -150,18 +156,19 @@ export default class GameController {
         }
     };
 
-    //TODO: вынести параметр "на сколько видим поле"
     animate = (t) => {
-        const {renderer, scene, camera, hero} = this;
+        const {renderer, scene, camera, hero, pathController} = this;
 
         hero.material.time = t;
 
-      //  hero.position.x += 0.05;
-      //  camera.position.x += 0.05;
+        hero.position.x += 0.01;
+        camera.position.x += 0.01;
+
+        pathController.fillVisibleField(scene, hero);
 
         renderer.render(scene, camera);
 
-        requestAnimationFrame(this.animate);
+        requestAnimationFrame(this.animate)
     }
 }
 

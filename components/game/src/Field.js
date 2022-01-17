@@ -19,9 +19,6 @@ export default class Field {
 
             scene.add(line)
         });
-
-
-
     }
 
     createLine() {
