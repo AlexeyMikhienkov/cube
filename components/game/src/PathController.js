@@ -19,22 +19,23 @@ export default class PathController {
         this._fieldHeight = length * height + (length - 1) * offset;
 
         this._currentLine = randomIntFromRange(0, length - 1);
-        console.log("current line:", this._currentLine)
     }
 
     chooseLine() {
-        let newCurrentLine = randomIntFromRange(0, 2);
+        const {_currentLine, _linesCount} = this;
 
-        while (newCurrentLine === this._currentLine) {
-            newCurrentLine = randomIntFromRange(0, 2);
-            console.log("new", newCurrentLine);
+        switch (_currentLine) {
+            case 0:
+                return 1;
+            case _linesCount - 1:
+                return _linesCount - 2;
+            default:
+                const variants = [_currentLine - 1, _currentLine + 1];
+                return variants[Math.round(Math.random())];
         }
-
-        this._currentLine = newCurrentLine;
-        console.log("НОВАЯ ЛИНИЯ:", this._currentLine)
     }
 
-    fillRow(scene) {
+    fillLine(scene, oldCurrent, newCurrent) {
         const {
             linesCount, field: {offset, lineSize: {height}},
             enemy: {size: {width: enemyWidth, depth: enemyDepth}}
@@ -42,9 +43,10 @@ export default class PathController {
         const {_fieldHeight, _currentLine, _currentFilledDistance} = this;
 
         for (let line = 0; line < linesCount; line++) {
-            if (line === _currentLine) continue;
+            if (line === oldCurrent || line === newCurrent || line === _currentLine)
+                continue;
 
-            if (checkProbability(0.2)) {
+            if (checkProbability(1)) {
                 const enemy = new Enemy();
 
                 const posX = Math.floor(_currentFilledDistance);
@@ -57,9 +59,10 @@ export default class PathController {
         }
 
         this._currentFilledDistance++;
-        this._stepsCounter--;
 
-        console.log("steps", this._stepsCounter)
+        if (!oldCurrent && !newCurrent)
+            this._stepsCounter--;
+
     }
 
     fillVisibleField(scene, hero) {
@@ -69,11 +72,13 @@ export default class PathController {
         if (distance + visibilityInMetres < this._currentFilledDistance) return;
 
         if (this._stepsCounter <= 0) {
-            this.chooseLine();
+            const newLine = this.chooseLine();
+            this.fillLine(scene, this._currentLine, newLine);
+            this._currentLine = newLine;
             this._stepsCounter = 10;
         }
 
-        this.fillRow(scene);
+        this.fillLine(scene);
     }
 
 }

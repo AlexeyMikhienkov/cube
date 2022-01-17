@@ -10,9 +10,9 @@ export const baseSettings = {
     },
     enemy: {
         size: {
-            width: 0.8,
-            height: 0.8,
-            depth: 0.8,
+            width: 0.6,
+            height: 0.6,
+            depth: 0.6,
         }
     }
 };

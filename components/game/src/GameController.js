@@ -161,8 +161,8 @@ export default class GameController {
 
         hero.material.time = t;
 
-        hero.position.x += 0.01;
-        camera.position.x += 0.01;
+        hero.position.x += 0.05;
+        camera.position.x += 0.05;
 
         pathController.fillVisibleField(scene, hero);
 
