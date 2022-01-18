@@ -1,12 +1,11 @@
 import CustomBasicMaterial from "../../../utils/three/CustomBasicMaterial";
+import {baseSettings} from "./settings";
 
 export default class Hero extends THREE.Mesh {
     constructor(time) {
-        const boxWidth = 0.8;
-        const boxHeight = 0.8;
-        const boxDepth = 0.8;
+        const {width, height, depth} = baseSettings.hero.size;
 
-        const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+        const geometry = new THREE.BoxGeometry(width, height, depth);
         const material = new CustomBasicMaterial({
             color: 0x000000,
             time

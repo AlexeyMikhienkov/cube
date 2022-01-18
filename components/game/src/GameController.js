@@ -20,6 +20,7 @@ export default class GameController {
     _height;
     time = 0;
     pathController;
+    _started = false;
 
     constructor() {
         this.renderer = new THREE.WebGLRenderer({antialias: true});
@@ -139,32 +140,16 @@ export default class GameController {
 
         const intersects = raycaster.intersectObjects([hero], false);
 
-        const clickOffset = Math.PI / 2;
-        const axis = ["x", "y", "z"];
-
-        if (intersects.length > 0) {
-            const randomAxis = axis[Math.floor(Math.random() * axis.length)];
-            const offset = Math.random() * clickOffset * 2 - clickOffset;
-
-            const newValue = hero.rotation[randomAxis] + offset;
-
-            gsap.to(hero.rotation, {
-                [randomAxis]: newValue,
-                duration: 0.5,
-                ease: "sine.inOut",
-            });
-        }
+        if (intersects.length > 0)
+            this._started = true;
     };
 
     animate = (t) => {
-        const {renderer, scene, camera, hero, pathController} = this;
+        const {renderer, scene, camera, hero, pathController, _started} = this;
 
         hero.material.time = t;
 
-        hero.position.x += 0.05;
-        camera.position.x += 0.05;
-
-        pathController.fillVisibleField(scene, hero);
+        pathController.updateValues(scene, hero, camera, _started);
 
         renderer.render(scene, camera);
 
@@ -173,11 +158,3 @@ export default class GameController {
 }
 
 export const game = new GameController();
-
-// classes:
-// Hero (куб) - визуал куба
-// Enemy (препятствие) - визуал препятствия
-// Field (игровое поле) - массив пустых ячеек, массив ячеек с потенциальными препятствиями,
-//     сколько шагов текущая ячейка является пустой (const), счетчик пройденных шагов для пустой ячейки,
-//     подсчет вероятности появления препятствия на непустых ячейках
-// Cell (игровая ячейка) - пустая/непустая

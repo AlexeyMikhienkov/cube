@@ -1,16 +1,17 @@
-import {baseSettings} from "./settings";
+import {baseSettings, getDeltas} from "./settings";
 import checkProbability from "../../../utils/number/probability";
 import Enemy from "./Enemy";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 
 export default class PathController {
     _currentLine;
-    _probability;
-    _stepsCounter = 10;
+    _probability = baseSettings.probability.min;
+    _maxCounter = baseSettings.blocksInLine.max;
+    _stepsCounter = baseSettings.blocksInLine.max;
     _currentFilledDistance = 0;
-    _enemies;
     _linesCount;
     _fieldHeight;
+    _speed = baseSettings.speed.min;
 
     constructor(length) {
         const {offset, lineSize: {height}} = baseSettings.field;
@@ -40,13 +41,13 @@ export default class PathController {
             linesCount, field: {offset, lineSize: {height}},
             enemy: {size: {width: enemyWidth, depth: enemyDepth}}
         } = baseSettings;
-        const {_fieldHeight, _currentLine, _currentFilledDistance} = this;
+        const {_fieldHeight, _currentLine, _currentFilledDistance, _probability} = this;
 
         for (let line = 0; line < linesCount; line++) {
             if (line === oldCurrent || line === newCurrent || line === _currentLine)
                 continue;
 
-            if (checkProbability(1)) {
+            if (checkProbability(_probability)) {
                 const enemy = new Enemy();
 
                 const posX = Math.floor(_currentFilledDistance);
@@ -62,23 +63,51 @@ export default class PathController {
 
         if (!oldCurrent && !newCurrent)
             this._stepsCounter--;
-
     }
 
-    fillVisibleField(scene, hero) {
+    fillVisibleField(scene, hero, camera, started) {
         const {visibilityInMetres} = baseSettings;
+        const {_currentFilledDistance, _currentLine, _stepsCounter, _maxCounter} = this;
         let distance = hero.position.x;
 
-        if (distance + visibilityInMetres < this._currentFilledDistance) return;
-
-        if (this._stepsCounter <= 0) {
-            const newLine = this.chooseLine();
-            this.fillLine(scene, this._currentLine, newLine);
-            this._currentLine = newLine;
-            this._stepsCounter = 10;
+        if (started) {
+            hero.position.x += this._speed;
+            camera.position.x += this._speed;
         }
 
-        this.fillLine(scene);
+        if (distance + visibilityInMetres >= _currentFilledDistance)
+            this.fillLine(scene);
+
+        if (_stepsCounter <= 0) {
+            const newLine = this.chooseLine();
+            this.fillLine(scene, _currentLine, newLine);
+            this._currentLine = newLine;
+
+            this._stepsCounter = Math.ceil(this._maxCounter);
+
+            if (_maxCounter <= baseSettings.blocksInLine.min)
+                this._stepsCounter = baseSettings.blocksInLine.min;
+        }
     }
 
+    updateValues(scene, hero, camera, started) {
+        if (started) {
+            this.updateOnTick(started);
+        }
+
+        this.fillVisibleField(scene, hero, camera, started)
+    }
+
+    updateOnTick() {
+        const {speed, probability, blocksInLine} = baseSettings;
+
+        if (this._probability < probability.max)
+            this._probability += getDeltas().probability;
+
+        if (this._speed < speed.max)
+            this._speed += getDeltas().speed;
+
+        if (this._maxCounter > blocksInLine.min)
+            this._maxCounter -= getDeltas().blocksCounter;
+    }
 }
