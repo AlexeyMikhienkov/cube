@@ -1,4 +1,3 @@
-import {DoubleSide} from "three";
 import {baseSettings} from "./settings";
 
 export default class Field {

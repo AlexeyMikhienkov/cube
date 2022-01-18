@@ -36,21 +36,28 @@ export default class PathController {
         }
     }
 
-    fillLine(scene, oldCurrent, newCurrent) {
+    //TODO: вынести поворот в fillLine
+    fillLine(scene) {
         const {
-            linesCount, field: {offset, lineSize: {height}},
+            linesCount, blocksInLine, field: {offset, lineSize: {height}},
             enemy: {size: {width: enemyWidth, depth: enemyDepth}}
         } = baseSettings;
-        const {_fieldHeight, _currentLine, _currentFilledDistance, _probability} = this;
+
+        const {_fieldHeight, _currentLine, _currentFilledDistance, _probability, _stepsCounter, _maxCounter} = this;
+        let newLine;
+
+        if (_stepsCounter <= 0) {
+            newLine = this.chooseLine();
+        }
 
         for (let line = 0; line < linesCount; line++) {
-            if (line === oldCurrent || line === newCurrent || line === _currentLine)
+            if (line === newLine || line === _currentLine)
                 continue;
 
             if (checkProbability(_probability)) {
                 const enemy = new Enemy();
 
-                const posX = Math.floor(_currentFilledDistance);
+                const posX = _currentFilledDistance;
                 const posZ = height / 2 + (height + offset) * line - _fieldHeight / 2;
 
                 enemy.position.set(posX + enemyWidth / 2, enemyDepth / 2, posZ);
@@ -59,15 +66,21 @@ export default class PathController {
             }
         }
 
-        this._currentFilledDistance++;
+        if (newLine !== null && newLine !== undefined) {
+            this._currentLine = newLine;
+            this._stepsCounter = Math.ceil(this._maxCounter);
 
-        if (!oldCurrent && !newCurrent)
+            if (_maxCounter <= blocksInLine.min)
+                this._stepsCounter = blocksInLine.min;
+        } else
             this._stepsCounter--;
+
+        this._currentFilledDistance += baseSettings.step;
     }
 
-    fillVisibleField(scene, hero, camera, started) {
+    checkNeedToFill(scene, hero, camera, started) {
         const {visibilityInMetres} = baseSettings;
-        const {_currentFilledDistance, _currentLine, _stepsCounter, _maxCounter} = this;
+        const {_currentFilledDistance, _speed} = this;
         let distance = hero.position.x;
 
         if (started) {
@@ -75,27 +88,17 @@ export default class PathController {
             camera.position.x += this._speed;
         }
 
-        if (distance + visibilityInMetres >= _currentFilledDistance)
+        if (distance + visibilityInMetres >= _currentFilledDistance) {
             this.fillLine(scene);
-
-        if (_stepsCounter <= 0) {
-            const newLine = this.chooseLine();
-            this.fillLine(scene, _currentLine, newLine);
-            this._currentLine = newLine;
-
-            this._stepsCounter = Math.ceil(this._maxCounter);
-
-            if (_maxCounter <= baseSettings.blocksInLine.min)
-                this._stepsCounter = baseSettings.blocksInLine.min;
+            this.checkNeedToFill(scene, hero, camera, started)
         }
     }
 
     updateValues(scene, hero, camera, started) {
-        if (started) {
+        if (started)
             this.updateOnTick(started);
-        }
 
-        this.fillVisibleField(scene, hero, camera, started)
+        this.checkNeedToFill(scene, hero, camera, started)
     }
 
     updateOnTick() {

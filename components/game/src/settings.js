@@ -1,6 +1,7 @@
 export const baseSettings = {
     linesCount: 4,
     visibilityInMetres: 30,
+    step: 1,
     speed: {
         min: 0.075,
         max: 0.2
@@ -24,9 +25,9 @@ export const baseSettings = {
     },
     enemy: {
         size: {
-            width: 0.75,
-            height: 0.75,
-            depth: 0.75,
+            width: 1,
+            height: 1,
+            depth: 1,
         }
     },
     hero: {

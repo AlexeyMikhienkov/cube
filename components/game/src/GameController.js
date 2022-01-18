@@ -103,7 +103,7 @@ export default class GameController {
         const fov = 75;
         const aspect = 1;
         const near = 1;
-        const far = 20;
+        const far = 30;
 
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         camera.position.set(-3, 2.5, 0);
