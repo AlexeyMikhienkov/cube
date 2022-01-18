@@ -1,7 +1,7 @@
 import {baseSettings, getDeltas} from "./settings";
 import checkProbability from "../../../utils/number/probability";
-import Enemy from "./Enemy";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
+import {itemsFactory} from "./ItemsFactory";
 
 export default class PathController {
     _currentLine;
@@ -12,6 +12,8 @@ export default class PathController {
     _linesCount;
     _fieldHeight;
     _speed = baseSettings.speed.min;
+    _emptyLines = [];
+    _enemies = [];
 
     constructor(length) {
         const {offset, lineSize: {height}} = baseSettings.field;
@@ -20,6 +22,7 @@ export default class PathController {
         this._fieldHeight = length * height + (length - 1) * offset;
 
         this._currentLine = randomIntFromRange(0, length - 1);
+        this._emptyLines.push(this._currentLine);
     }
 
     chooseLine() {
@@ -36,38 +39,26 @@ export default class PathController {
         }
     }
 
-    //TODO: вынести поворот в fillLine
-    fillLine(scene) {
-        const {
-            linesCount, blocksInLine, field: {offset, lineSize: {height}},
-            enemy: {size: {width: enemyWidth, depth: enemyDepth}}
-        } = baseSettings;
+    fillRow(scene) {
+        const {blocksInLine} = baseSettings;
+        const {_probability, _stepsCounter, _maxCounter, _linesCount, _emptyLines} = this;
 
-        const {_fieldHeight, _currentLine, _currentFilledDistance, _probability, _stepsCounter, _maxCounter} = this;
-        let newLine;
+        if (_stepsCounter <= 0)
+            _emptyLines.push(this.chooseLine());
 
-        if (_stepsCounter <= 0) {
-            newLine = this.chooseLine();
-        }
+        const linesToFill = new Array(_linesCount)
+            .fill(0)
+            .map((item, index) => index)
+            .filter(item => !_emptyLines.includes(item));
 
-        for (let line = 0; line < linesCount; line++) {
-            if (line === newLine || line === _currentLine)
-                continue;
+        linesToFill.forEach(line => {
+            if (checkProbability(_probability))
+                scene.add(this.createEnemy(line))
+        });
 
-            if (checkProbability(_probability)) {
-                const enemy = new Enemy();
+        if (_emptyLines.length > 1) {
+            this.chooseNewCurrentLine();
 
-                const posX = _currentFilledDistance;
-                const posZ = height / 2 + (height + offset) * line - _fieldHeight / 2;
-
-                enemy.position.set(posX + enemyWidth / 2, enemyDepth / 2, posZ);
-
-                scene.add(enemy);
-            }
-        }
-
-        if (newLine !== null && newLine !== undefined) {
-            this._currentLine = newLine;
             this._stepsCounter = Math.ceil(this._maxCounter);
 
             if (_maxCounter <= blocksInLine.min)
@@ -76,6 +67,46 @@ export default class PathController {
             this._stepsCounter--;
 
         this._currentFilledDistance += baseSettings.step;
+    }
+
+    chooseNewCurrentLine() {
+        const {_emptyLines, _currentLine} = this;
+
+        const currentLineIndex = _emptyLines.indexOf(_currentLine);
+
+        if (currentLineIndex !== -1)
+            _emptyLines.splice(currentLineIndex, 1);
+
+        this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
+    }
+
+    createEnemy(line) {
+        const {
+            field: {offset, lineSize: {height}},
+            enemy: {size: {width: enemyWidth, depth: enemyDepth}}
+        } = baseSettings;
+        
+        const {_currentFilledDistance, _fieldHeight} = this;
+
+        //TODO: создавать через фабрику
+        const enemy = itemsFactory.getItem("enemy");
+        this._enemies.push(enemy);
+
+        const posX = _currentFilledDistance;
+        const posZ = height / 2 + (height + offset) * line - _fieldHeight / 2;
+
+        enemy.position.set(posX + enemyWidth / 2, enemyDepth / 2, posZ);
+
+        return enemy;
+    }
+
+    checkPassedEnemies(hero) {
+        this._enemies.forEach(enemy => {
+            if (enemy.position.x < hero.position.x - 20) {
+                itemsFactory.pushItem(enemy);
+                this._enemies.splice(this._enemies.indexOf(enemy), 1);
+            }
+        })
     }
 
     checkNeedToFill(scene, hero, camera, started) {
@@ -89,8 +120,8 @@ export default class PathController {
         }
 
         if (distance + visibilityInMetres >= _currentFilledDistance) {
-            this.fillLine(scene);
-            this.checkNeedToFill(scene, hero, camera, started)
+            this.fillRow(scene);
+            this.checkNeedToFill(scene, hero, camera, started);
         }
     }
 
@@ -98,7 +129,9 @@ export default class PathController {
         if (started)
             this.updateOnTick(started);
 
-        this.checkNeedToFill(scene, hero, camera, started)
+        this.checkNeedToFill(scene, hero, camera, started);
+
+        this.checkPassedEnemies(hero);
     }
 
     updateOnTick() {

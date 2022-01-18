@@ -13,5 +13,4 @@ export default class Hero extends THREE.Mesh {
 
         super(geometry, material);
     }
-
 }
