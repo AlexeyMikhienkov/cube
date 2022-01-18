@@ -39,9 +39,7 @@ export default class GameController {
 
         renderer.domElement.addEventListener('click', this.onClick);
 
-
         this.initField();
-        //   this.initFog();
         this.initRaycaster();
         this.initHelpers();
 
@@ -111,14 +109,6 @@ export default class GameController {
 
         this.camera = camera;
         this.scene.add(camera);
-    }
-
-    initFog() {
-        const color = 0xffffff;
-        const near = 0.1;
-        const far = 5;
-
-        this.scene.fog = new THREE.Fog(color, near, far);
     }
 
     initRaycaster() {

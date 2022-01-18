@@ -12,4 +12,8 @@ export default class Enemy extends THREE.Mesh {
 
         super(geometry, material);
     }
+
+    reset() {
+        this.parent?.remove(this);
+    }
 }

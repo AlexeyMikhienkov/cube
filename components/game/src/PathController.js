@@ -5,15 +5,22 @@ import {itemsFactory} from "./ItemsFactory";
 
 export default class PathController {
     _currentLine;
+
     _probability = baseSettings.probability.min;
+
     _maxCounter = baseSettings.blocksInLine.max;
+
     _stepsCounter = baseSettings.blocksInLine.max;
+
     _currentFilledDistance = 0;
+
     _linesCount;
+
     _fieldHeight;
+
     _speed = baseSettings.speed.min;
+
     _emptyLines = [];
-    _enemies = [];
 
     constructor(length) {
         const {offset, lineSize: {height}} = baseSettings.field;
@@ -85,12 +92,10 @@ export default class PathController {
             field: {offset, lineSize: {height}},
             enemy: {size: {width: enemyWidth, depth: enemyDepth}}
         } = baseSettings;
-        
+
         const {_currentFilledDistance, _fieldHeight} = this;
 
-        //TODO: создавать через фабрику
         const enemy = itemsFactory.getItem("enemy");
-        this._enemies.push(enemy);
 
         const posX = _currentFilledDistance;
         const posZ = height / 2 + (height + offset) * line - _fieldHeight / 2;
@@ -101,23 +106,21 @@ export default class PathController {
     }
 
     checkPassedEnemies(hero) {
-        this._enemies.forEach(enemy => {
+        const storage = itemsFactory.getStorage("enemy");
+        const activeEnemies = storage.createdItems.filter(item => !storage.items.includes(item));
+
+        activeEnemies.forEach(enemy => {
             if (enemy.position.x < hero.position.x - 20) {
                 itemsFactory.pushItem(enemy);
-                this._enemies.splice(this._enemies.indexOf(enemy), 1);
+                enemy.reset();
             }
         })
     }
 
     checkNeedToFill(scene, hero, camera, started) {
         const {visibilityInMetres} = baseSettings;
-        const {_currentFilledDistance, _speed} = this;
+        const {_currentFilledDistance} = this;
         let distance = hero.position.x;
-
-        if (started) {
-            hero.position.x += this._speed;
-            camera.position.x += this._speed;
-        }
 
         if (distance + visibilityInMetres >= _currentFilledDistance) {
             this.fillRow(scene);
@@ -127,14 +130,13 @@ export default class PathController {
 
     updateValues(scene, hero, camera, started) {
         if (started)
-            this.updateOnTick(started);
+            this.updateOnTick(hero, camera);
 
         this.checkNeedToFill(scene, hero, camera, started);
-
         this.checkPassedEnemies(hero);
     }
 
-    updateOnTick() {
+    updateOnTick(hero, camera) {
         const {speed, probability, blocksInLine} = baseSettings;
 
         if (this._probability < probability.max)
@@ -145,5 +147,8 @@ export default class PathController {
 
         if (this._maxCounter > blocksInLine.min)
             this._maxCounter -= getDeltas().blocksCounter;
+
+        hero.position.x += this._speed;
+        camera.position.x += this._speed;
     }
 }
