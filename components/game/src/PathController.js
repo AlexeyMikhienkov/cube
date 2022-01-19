@@ -203,12 +203,12 @@ export default class PathController {
 
         if (distance + visibilityInMetres >= _currentFilledDistance + maxHeight) {
             this.createPathPart();
-            this.setEnemiesOnField();
+            this.setEnemiesOnField(scene);
             this.fieldCheckAndFill(scene, hero, camera);
         }
     }
 
-    setEnemiesOnField() {
+    setEnemiesOnField(scene) {
         // Проверить, можем ли поставить препятствие (идти с самого крупного)
         //   пройтись по всем вариациям постановки препятствия в ряду:
         //    - если матрица препятствия не пересекается с путем, считаем вероятность установки)
@@ -221,7 +221,7 @@ export default class PathController {
         // 2. Вычесть n-1, начать поиск подстановки с него (с R-2)
         // 3. Пройтись по рядам и от R-2 до R+2
 
-        const {_currentFilledDistance} = this;
+        const {_currentFilledDistance, _probability} = this;
         const {maxHeight} = enemies;
 
         const rowNumber = Number(_currentFilledDistance / baseSettings.step);
@@ -231,25 +231,53 @@ export default class PathController {
 
         for (let row = startRow; row <= endRow; row++) {
             PathController.ENEMIES_TYPES.map(enemy => {
+                if (row + enemy.matrix.length - 1 > endRow) return;
+
                 const variantsInRow = this._linesCount - enemy.dims.columns;
 
                 for (let column = 0; column <= variantsInRow; column++)
-                    this.canSetEnemy(row, column, enemy.matrix);
+                    if (this.canSetEnemy(row, column, enemy) && checkProbability(_probability))
+                        scene.add(this.createEnemy(column))
             })
         }
 
         this._currentFilledDistance += baseSettings.step;
-        console.log("UP DISTANCE:", this._currentFilledDistance);
     }
 
-    // Можно ли поставить препятствие
-    canSetEnemy(row, column, enemyMatrix) {
-/*        console.log("enemyMatrix", enemyMatrix);
-        console.log("cellsMatrix", this._cellsMatrix);
-        console.log(`row: ${row}, column: ${column}`)
-        debugger*/
+    canSetEnemy(row, column, enemy) {
+        /*        console.log("enemyMatrix", enemyMatrix);
+                console.log("cellsMatrix", this._cellsMatrix);
+                console.log(`row: ${row}, column: ${column}`)
+                debugger*/
 
+        const {_cellsMatrix} = this;
+        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
 
+        const checkedRows = _cellsMatrix.filter(
+            ({rowNumber}) => rowNumber >= row && rowNumber <= row + enemyMatrixRows
+        );
+
+        const slicedRowsMatrix = checkedRows.map(({rowArray}) => rowArray.slice(column, column + enemyMatrixColumns));
+
+        for (let i = 0; i < enemyMatrixRows; i++)
+            for (let j = 0; j < enemyMatrixColumns; j++)
+                if (enemyMatrix[i][j] === PathController.PATH_CELL &&
+                    slicedRowsMatrix[i][j] !== PathController.EMPTY_CELL)
+                    return false;
+
+        return true;
+    }
+
+    checkEquals(matrixA, matrixB) {
+        for (let i = 0; i < matrixA.length; i++) {
+            const stringA = matrixA[i]?.join(" ") || "";
+            const stringB = matrixB[i]?.join(" ") || "";
+
+            if (stringA !== stringB)
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -281,9 +309,6 @@ export default class PathController {
             }
 
             const rowNumber = Number(_currentFilledDistance / baseSettings.step) * steps + row;
-            console.log("!!!!!", _currentFilledDistance, baseSettings.step, _currentFilledDistance / baseSettings.step);
-
-
             const rowArray = new Array(_linesCount).fill(PathController.EMPTY_CELL);
 
             for (let column = 0; column < _linesCount; column++) {
