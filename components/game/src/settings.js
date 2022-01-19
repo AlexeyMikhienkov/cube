@@ -1,7 +1,7 @@
 export const baseSettings = {
     linesCount: 4,
     visibilityInMetres: 30,
-    step: 1,
+    step: 1.5,
     speed: {
         min: 0.075,
         max: 0.2
@@ -49,3 +49,48 @@ export function getDeltas() {
     }
 }
 
+export const enemies = {
+    types: {
+        small: [[1]],
+        medium: [
+            [1, 1],
+            [1, 1]
+        ],
+        big: [
+            [1, 1, 1],
+            [1, 0, 0],
+            [1, 0, 0]
+        ]
+    },
+    get maxHeight() {
+        const sizes = Object.values(this.types).map(matrix => matrix.length);
+
+        return Math.max(...sizes);
+    }
+};
+
+export function sortEnemiesDimensionsDesc() {
+    const enemiesWithDimensions = Object.entries(enemies.types).map(([type, matrix]) => {
+        return {
+            type,
+            matrix,
+            dims: {
+                rows: matrix.length,
+                columns: matrix.reduce((x, y) => Math.max(x, y.length), 0)
+            }
+        }
+    });
+
+    return enemiesWithDimensions.sort((a, b) => {
+        const {rows: rowsA, columns: columnsA} = a.dims;
+        const {rows: rowsB, columns: columnsB} = b.dims;
+
+        if (rowsA < rowsB)
+            return 1;
+        else if (rowsB < rowsA)
+            return -1;
+        else if (columnsA < columnsB)
+            return 1;
+        else return -1;
+    })
+}
