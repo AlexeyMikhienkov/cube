@@ -1,3 +1,5 @@
+import {itemsFactory} from "./ItemsFactory";
+
 export default class Cell {
     _row;
 
@@ -11,6 +13,11 @@ export default class Cell {
         this._row = row;
         this._column = column;
 
+    }
+
+    reset() {
+        if (this._enemy)
+            itemsFactory.pushItem(this._enemy);
     }
 
 }

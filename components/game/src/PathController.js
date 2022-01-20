@@ -1,10 +1,8 @@
 import {baseSettings, enemies, getDeltas, sortEnemiesDimensionsDesc} from "./settings";
 import checkProbability from "../../../utils/number/probability";
-import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 import {itemsFactory} from "./ItemsFactory";
 import Row from "./Row";
 import Cell from "./Cell";
-import {loadGetInitialProps} from "next/dist/shared/lib/utils";
 
 export default class PathController {
     /**
@@ -148,15 +146,17 @@ export default class PathController {
      * @param hero игрок (куб)
      */
     checkPassedEnemies(hero) {
-        const storage = itemsFactory.getStorage("enemy");
-        const activeEnemies = storage.createdItems.filter(item => !storage.items.includes(item));
+        const currentRow = Math.floor(hero.position.x / baseSettings.step);
+        const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 10);
 
-        activeEnemies.forEach(enemy => {
-            if (enemy.position.x < hero.position.x - 20) {
-                itemsFactory.pushItem(enemy);
-                enemy.reset();
-            }
-        })
+        deletingRows.forEach(row => {
+            row.reset();
+
+            const deleteIndex = this._rows.indexOf(row);
+            this._rows.splice(deleteIndex, 1);
+        });
+
+       // console.log(this._rows.length);
     }
 
     /**
@@ -312,7 +312,8 @@ export default class PathController {
             cells.push(cell);
         }
 
-        const newRow = new Row(rowNumber, cells);
+        const newRow = itemsFactory.getItem("row");
+        newRow.init(rowNumber, cells);
 
         this._rows.push(newRow);
     }

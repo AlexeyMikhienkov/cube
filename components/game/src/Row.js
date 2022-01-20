@@ -3,13 +3,22 @@ export default class Row {
 
     _cells = [];
 
-    constructor(number, cells) {
+    constructor() {
+
+    }
+
+    init(number, cells) {
         this._id = number;
         this._cells = cells;
     }
 
     getCell(index) {
         return this._cells[index];
+    }
+
+    reset() {
+        this._cells.forEach(cell => cell.reset());
+        this._cells.length = 0;
     }
 
 }
