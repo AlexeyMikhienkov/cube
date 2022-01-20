@@ -21,7 +21,7 @@ export default class MediumEnemy extends Enemy {
             color: 0x00ff00,
         });
 
-        const geometryInOffset = new THREE.BoxGeometry(boxWidth, boxHeight, offset);
+        const geometryInOffset = new THREE.BoxGeometry(boxWidth , boxHeight, offset);
 
 
         for (let i = 0; i < 4; i++)
@@ -30,14 +30,12 @@ export default class MediumEnemy extends Enemy {
         for (let i = 0; i < 2; i++)
             this._offsetMeshes.push(new THREE.Mesh(geometryInOffset, material));
 
-
-
         this._meshes[0].position.set(0, 0, 0);
         this._meshes[1].position.set(boxWidth, 0, 0);
         this._meshes[2].position.set(boxWidth, 0, boxDepth + offset);
         this._meshes[3].position.set(0, 0, boxDepth + offset);
         this._offsetMeshes[0].position.set(0, 0, boxDepth - offset / 2);
-        this._offsetMeshes[1].position.set(boxWidth, 0, boxDepth - offset / 2); // почему блин??????
+        this._offsetMeshes[1].position.set(boxWidth, 0, boxDepth - offset / 2);
 
         this._meshes.forEach(mesh => this.add(mesh));
         this._offsetMeshes.forEach(mesh => this.add(mesh));

@@ -280,16 +280,27 @@ export default class PathController {
         const {_cellsMatrix} = this;
         const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
 
+        console.log("!")
+
         const checkedRows = _cellsMatrix.filter(
-            ({rowNumber}) => rowNumber >= row && rowNumber <= row + enemyMatrixRows
+            ({rowNumber}) => rowNumber >= row && rowNumber < row + enemyMatrixRows
         );
 
+        console.log("!!")
+
         const slicedRowsMatrix = checkedRows.map(({rowArray}) => rowArray.slice(column, column + enemyMatrixColumns));
+
+        console.log("!!!")
 
         return !(this.checkMatricesIntersects(enemyMatrix, slicedRowsMatrix))
     }
 
     checkMatricesIntersects(enemyMatrix, slicedRowsMatrix) {
+        console.log(enemyMatrix);
+        console.log(slicedRowsMatrix);
+
+        //TODO: приходят неверные данные в матрицах (slicedRows) на 1 ряд меньше чем надо
+
         for (let i = 0; i < enemyMatrix.length; i++)
             for (let j = 0; j < enemyMatrix[i].length; j++)
                 if (enemyMatrix[i][j] === PathController.PATH_CELL &&
