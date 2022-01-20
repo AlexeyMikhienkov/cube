@@ -4,7 +4,8 @@ export const baseSettings = {
     step: 1,
     speed: {
         min: 0.075,
-        max: 0.2
+   //     max: 0.2
+        max: 0.075
     },
     probability: {
         min: 0.1,
