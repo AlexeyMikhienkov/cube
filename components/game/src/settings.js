@@ -8,7 +8,7 @@ export const baseSettings = {
         max: 0.075
     },
     probability: {
-        min: 0.1,
+        min: 1,
         max: 1
     },
     blocksInLine: {

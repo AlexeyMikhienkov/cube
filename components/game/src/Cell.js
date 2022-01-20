@@ -1,11 +1,15 @@
 export default class Cell {
+    _row;
+
+    _column;
+
     _isEmpty = true;
 
-    enemy;
+    _enemy = null;
 
     constructor(row, column) {
-        this.row = row;
-        this.column = column;
+        this._row = row;
+        this._column = column;
 
     }
 

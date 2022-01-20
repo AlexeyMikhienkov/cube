@@ -2,7 +2,9 @@ import {baseSettings, enemies, getDeltas, sortEnemiesDimensionsDesc} from "./set
 import checkProbability from "../../../utils/number/probability";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 import {itemsFactory} from "./ItemsFactory";
+import Row from "./Row";
 import Cell from "./Cell";
+import {loadGetInitialProps} from "next/dist/shared/lib/utils";
 
 export default class PathController {
     /**
@@ -62,7 +64,7 @@ export default class PathController {
      */
     _emptyLines = [];
 
-    _cellsMatrix = [];
+    _rows = [];
 
     static ENEMIES_TYPES = sortEnemiesDimensionsDesc();
     static EMPTY_CELL = 0;
@@ -79,11 +81,9 @@ export default class PathController {
         this._linesCount = linesCount;
         this._fieldHeight = linesCount * height + (linesCount - 1) * offset;
 
-        this._currentLine = randomIntFromRange(0, linesCount - 1);
+        //this._currentLine = randomIntFromRange(0, linesCount - 1);
+        this._currentLine = 3;
         this._emptyLines.push(this._currentLine);
-
-      //  console.log("!! CURRENT LINE:", this._currentLine);
-      //  debugger
     }
 
     /**
@@ -117,9 +117,6 @@ export default class PathController {
             _emptyLines.splice(currentLineIndex, 1);
 
         this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
-
-     //   console.log("NEW CURRENT LINE:", this._currentLine);
-     //   debugger
     }
 
     /**
@@ -150,7 +147,6 @@ export default class PathController {
      * Проверка препятствий на "пройденность"
      * @param hero игрок (куб)
      */
-    //TODO: переделать ??
     checkPassedEnemies(hero) {
         const storage = itemsFactory.getStorage("enemy");
         const activeEnemies = storage.createdItems.filter(item => !storage.items.includes(item));
@@ -198,19 +194,16 @@ export default class PathController {
 
         const {maxHeight} = enemies;
 
-        const rowNumber = Number(this._currentFilledDistance / baseSettings.step) * maxHeight;
+        const rowNumber = this._currentFilledDistance / baseSettings.step * maxHeight;
 
         const startRow = rowNumber > 1 ? rowNumber - maxHeight + 1 : 0;
         const endRow = rowNumber + maxHeight - 1;
 
-/*        console.log("START ROW", startRow);
-        console.log("END ROW", endRow);*/
-
         for (let row = startRow; row <= endRow; row++)
             for (let column = 0; column < this._linesCount; column++) {
-                const currentRowInMatrix = this._cellsMatrix.find(({rowNumber}) => rowNumber === row);
+                const currentRow = this._rows.find(({_id}) => _id === row);
 
-                if (currentRowInMatrix.rowArray[column] !== PathController.EMPTY_CELL)
+                if (!currentRow.getCell(column)._isEmpty)
                     continue;
 
                 if (checkProbability(this._probability)) {
@@ -230,7 +223,6 @@ export default class PathController {
     }
 
     editCellsMatrix(row, column, enemy) {
-        const {_cellsMatrix} = this;
         const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
 
         const enemyMatrixReversed = [...enemyMatrix].reverse();
@@ -238,52 +230,30 @@ export default class PathController {
         for (let i = 0; i < enemyMatrixRows; i++)
             for (let j = 0; j < enemyMatrixColumns; j++) {
                 if (enemyMatrixReversed[i][j] === PathController.PATH_CELL) {
-                    const matrixRow = _cellsMatrix.find(({rowNumber}) => rowNumber === row + i);
+                    const currentRow = this._rows.find(({_id}) => _id === row + i);
 
-                    if (matrixRow === undefined) {
-                        console.log("РЯД НЕ НАЙДЕН");
-                        return
-                    }
-                    matrixRow.rowArray[column + j] = PathController.ENEMY_CELL;
+                    currentRow.getCell(column + j)?._enemy = enemy;
+                    currentRow.getCell(column + j)?._isEmpty = false;
                 }
             }
+
+       // console.log("!", enemyMatrixReversed, this._emptyLines, this._cellsMatrix)
     }
 
-    canSetEnemy(row, column, enemy) {
+    canSetEnemy(rowNumber, column, enemy) {
         const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
 
-/*        console.log("CAN SET ENEMY?")
-        console.log("cellsMatrix", this._cellsMatrix);
-        console.log(`row: ${row}, column: ${column}`);
-        console.log("enemy matrix:", enemyMatrix)
-        debugger*/
+        const checkedRows = this._rows.filter(({_id}) => _id >= rowNumber && _id < rowNumber + enemyMatrixRows);
+        const slicedCellsMatrix = checkedRows.map(({_cells}) => _cells.slice(column, column + enemyMatrixColumns));
 
-        const checkedRows = this._cellsMatrix.filter(
-            ({rowNumber}) => rowNumber >= row && rowNumber < row + enemyMatrixRows
-        );
-
-        const slicedRowsMatrix = checkedRows.map(({rowArray}) => rowArray.slice(column, column + enemyMatrixColumns));
-
-/*        const res = this.checkMatricesIntersects(enemyMatrix, slicedRowsMatrix)
-        console.log("result", res);
-        debugger
-
-        return !res[0];*/
-
-
-        return !(this.checkMatricesIntersects(enemyMatrix, slicedRowsMatrix))
+        return !(this.checkMatricesIntersects(enemyMatrix, slicedCellsMatrix))
     }
 
-    checkMatricesIntersects(enemyMatrix, slicedRowsMatrix) {
-/*        console.log("check matrices intersects")
-        console.log(enemyMatrix);
-        console.log(slicedRowsMatrix);
-        debugger*/
-
-        for (let i = 0; i < enemyMatrix.length; i++)
-            for (let j = 0; j < enemyMatrix[i].length; j++)
-                if (enemyMatrix[i][j] === PathController.PATH_CELL &&
-                    slicedRowsMatrix[i][j] !== PathController.EMPTY_CELL)
+    checkMatricesIntersects(enemyMatrix, slicedCellsMatrix) {
+        for (let row = 0; row < enemyMatrix.length; row++)
+            for (let column = 0; column < enemyMatrix[row].length; column++)
+                if (enemyMatrix[row][column] === PathController.PATH_CELL &&
+                    !slicedCellsMatrix[row][column]._isEmpty)
                     return true;
 
         return false;
@@ -306,57 +276,45 @@ export default class PathController {
 
     createPathPart() {
         const {maxHeight: steps} = enemies;
-        const {_emptyLines, _maxCounter} = this;
+        const {_maxCounter} = this;
         const {blocksInLine} = baseSettings;
 
         for (let row = 0; row < steps; row++) {
             if (this._stepsCounter <= 0)
-                _emptyLines.push(this.chooseNewEmptyLine());
+                this._emptyLines.push(this.chooseNewEmptyLine());
 
             this.createNewRow(steps, row);
-
-
-/*            if (this._stepsCounter === 18) {
-                console.log(this._cellsMatrix)
-                debugger
-            }*/
 
             if (this._emptyLines.length > 1) {
                 this.chooseNextCurrentLine();
 
                 this._stepsCounter = Math.ceil(this._maxCounter);
 
-                console.log(this._stepsCounter)
-
                 if (_maxCounter <= blocksInLine.min)
                     this._stepsCounter = blocksInLine.min;
             } else
                 this._stepsCounter--;
         }
-
-/*        console.log("AFTER CREATING PATH PART:");
-        console.log("cells matrix:", this._cellsMatrix);
-        console.log("steps counter", this._stepsCounter)
-        debugger*/
     }
 
     createNewRow(steps, row) {
         const {_currentFilledDistance, _linesCount, _emptyLines} = this;
+        const cells = [];
 
-        const rowNumber = Number(_currentFilledDistance / baseSettings.step) * steps + row;
-        const rowArray = new Array(_linesCount).fill(PathController.EMPTY_CELL);
+        const rowNumber = _currentFilledDistance / baseSettings.step * steps + row;
 
         for (let column = 0; column < _linesCount; column++) {
-            //  const cell = new Cell(rowNumber, column);
+            const cell = new Cell(rowNumber, column);
 
             if (_emptyLines.includes(column))
-                rowArray[column] = PathController.PATH_CELL;
+                cell._isEmpty = false;
+
+            cells.push(cell);
         }
 
-        this._cellsMatrix.push({
-            rowNumber,
-            rowArray
-        });
+        const newRow = new Row(rowNumber, cells);
+
+        this._rows.push(newRow);
     }
 
     /**
