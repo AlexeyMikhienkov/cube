@@ -82,6 +82,9 @@ export default class PathController {
 
         this._currentLine = randomIntFromRange(0, linesCount - 1);
         this._emptyLines.push(this._currentLine);
+
+        console.log("!! CURRENT LINE:", this._currentLine);
+      //  debugger
     }
 
     /**
@@ -148,13 +151,16 @@ export default class PathController {
             _emptyLines.splice(currentLineIndex, 1);
 
         this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
+
+        console.log("NEW CURRENT LINE:", this._currentLine);
+     //   debugger
     }
 
     /**
      * Создание препятствия
      * @param line линия, на которой препятствие создается
      */
-    createEnemy(line) {
+    createEnemy(line, type) {
         const {
             field: {offset, lineSize: {height}},
             enemy: {size: {width: enemyWidth, depth: enemyDepth}}
@@ -162,7 +168,8 @@ export default class PathController {
 
         const {_currentFilledDistance, _fieldHeight} = this;
 
-        const enemy = itemsFactory.getItem("enemy");
+        const enemy = itemsFactory.getItem(type);
+        enemy.create();
 
         const posX = _currentFilledDistance;
         const posZ = height / 2 + (height + offset) * line - _fieldHeight / 2;
@@ -229,27 +236,47 @@ export default class PathController {
         const startRow = rowNumber > 1 ? rowNumber - maxHeight + 1 : 0;
         const endRow = rowNumber + maxHeight - 1;
 
-        for (let row = startRow; row <= endRow; row++) {
-            PathController.ENEMIES_TYPES.map(enemy => {
-                if (row + enemy.matrix.length - 1 > endRow) return;
+        for (let row = startRow; row <= endRow; row++)
+            for (let column = 0; column < this._linesCount; column++) {
+                const currentRowInMatrix = this._cellsMatrix.find(({rowNumber}) => rowNumber === row);
 
-                const variantsInRow = this._linesCount - enemy.dims.columns;
+                if (currentRowInMatrix.rowArray[column] !== PathController.EMPTY_CELL)
+                    continue;
 
-                for (let column = 0; column <= variantsInRow; column++)
-                    if (this.canSetEnemy(row, column, enemy) && checkProbability(_probability))
-                        scene.add(this.createEnemy(column))
-            })
-        }
+                if (checkProbability(_probability)) {
+                    PathController.ENEMIES_TYPES.map(enemy => {
+                        if (enemy.dims.columns + column > this._linesCount) return;
+
+                        if (this.canSetEnemy(row, column, enemy)) {
+                    //        console.log(enemy.type)
+                            this.editCellsMatrix(row, column, enemy);
+                            scene.add(this.createEnemy(column, enemy.type))
+                        }
+                    })
+                }
+            }
 
         this._currentFilledDistance += baseSettings.step;
     }
 
-    canSetEnemy(row, column, enemy) {
-        /*        console.log("enemyMatrix", enemyMatrix);
-                console.log("cellsMatrix", this._cellsMatrix);
-                console.log(`row: ${row}, column: ${column}`)
-                debugger*/
+    editCellsMatrix(row, column, enemy) {
+        const {_cellsMatrix} = this;
+        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
 
+        for (let i = 0; i < enemyMatrixRows; i++)
+            for (let j = 0; j < enemyMatrixColumns; j++) {
+                if (enemyMatrix[i][j] === PathController.PATH_CELL) {
+                    const matrixRow = _cellsMatrix.find(({rowNumber}) => rowNumber === row + i);
+                    if (matrixRow === undefined) {
+                        console.log("РЯД НЕ НАЙДЕН");
+                        return
+                    }
+                    matrixRow.rowArray[column + j] = PathController.ENEMY_CELL;
+                }
+            }
+    }
+
+    canSetEnemy(row, column, enemy) {
         const {_cellsMatrix} = this;
         const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
 
@@ -259,25 +286,17 @@ export default class PathController {
 
         const slicedRowsMatrix = checkedRows.map(({rowArray}) => rowArray.slice(column, column + enemyMatrixColumns));
 
-        for (let i = 0; i < enemyMatrixRows; i++)
-            for (let j = 0; j < enemyMatrixColumns; j++)
-                if (enemyMatrix[i][j] === PathController.PATH_CELL &&
-                    slicedRowsMatrix[i][j] !== PathController.EMPTY_CELL)
-                    return false;
-
-        return true;
+        return !(this.checkMatricesIntersects(enemyMatrix, slicedRowsMatrix))
     }
 
-    checkEquals(matrixA, matrixB) {
-        for (let i = 0; i < matrixA.length; i++) {
-            const stringA = matrixA[i]?.join(" ") || "";
-            const stringB = matrixB[i]?.join(" ") || "";
+    checkMatricesIntersects(enemyMatrix, slicedRowsMatrix) {
+        for (let i = 0; i < enemyMatrix.length; i++)
+            for (let j = 0; j < enemyMatrix[i].length; j++)
+                if (enemyMatrix[i][j] === PathController.PATH_CELL &&
+                    slicedRowsMatrix[i][j] !== PathController.EMPTY_CELL)
+                    return true;
 
-            if (stringA !== stringB)
-                return false;
-        }
-
-        return true;
+        return false;
     }
 
     /**
@@ -292,40 +311,56 @@ export default class PathController {
             this.updateOnTick(hero, camera);
 
         this.fieldCheckAndFill(scene, hero, camera);
-
         this.checkPassedEnemies(hero);
     }
 
     createPathPart() {
         const {maxHeight: steps} = enemies;
-        const {_stepsCounter, _linesCount, _emptyLines, _currentFilledDistance} = this;
+        const {_emptyLines, _maxCounter} = this;
+        const {blocksInLine} = baseSettings;
 
-        console.log("CREATE PATH PART!");
+     //   console.log("CREATE PATH PART");
 
         for (let row = 0; row < steps; row++) {
-            if (_stepsCounter <= 0) {
+            if (this._stepsCounter <= 0)
                 _emptyLines.push(this.chooseNewEmptyLine());
+
+            this.createNewRow(steps, row);
+
+            if (this._emptyLines.length > 1) {
                 this.chooseNextCurrentLine();
-            }
 
-            const rowNumber = Number(_currentFilledDistance / baseSettings.step) * steps + row;
-            const rowArray = new Array(_linesCount).fill(PathController.EMPTY_CELL);
+                this._stepsCounter = Math.ceil(this._maxCounter);
 
-            for (let column = 0; column < _linesCount; column++) {
-                const cell = new Cell(rowNumber, column);
-
-                if (!_emptyLines.includes(column))
-                    cell._isEmpty = false;
-
-                if (_emptyLines.includes(column))
-                    rowArray[column] = PathController.PATH_CELL;
-            }
-
-            this._cellsMatrix.push({
-                rowNumber,
-                rowArray
-            })
+                if (_maxCounter <= blocksInLine.min)
+                    this._stepsCounter = blocksInLine.min;
+            } else
+                this._stepsCounter -= 1;
         }
+
+/*        console.log("AFTER CREATING PATH PART:");
+        console.log("cells matrix:", this._cellsMatrix);
+        console.log("steps counter", this._stepsCounter)
+        debugger*/
+    }
+
+    createNewRow(steps, row) {
+        const {_currentFilledDistance, _linesCount, _emptyLines} = this;
+
+        const rowNumber = Number(_currentFilledDistance / baseSettings.step) * steps + row;
+        const rowArray = new Array(_linesCount).fill(PathController.EMPTY_CELL);
+
+        for (let column = 0; column < _linesCount; column++) {
+            //  const cell = new Cell(rowNumber, column);
+
+            if (_emptyLines.includes(column))
+                rowArray[column] = PathController.PATH_CELL;
+        }
+
+        this._cellsMatrix.push({
+            rowNumber,
+            rowArray
+        });
     }
 
     /**
@@ -349,10 +384,3 @@ export default class PathController {
         camera.position.x += this._speed;
     }
 }
-
-//TODO:
-// 1. Рассчитывать путь на высоту самого высокого противника (до этапа инициализации сложных противников взять const N)
-// 2. После добавлять противников (пока простых), но смотря что было до (если сложный противник), что сейчас и что после
-// 2.1. Противник не пересекается с путем
-// 2.2. Противники не пересекаются друг с другом
-

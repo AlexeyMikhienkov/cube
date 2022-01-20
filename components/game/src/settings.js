@@ -1,7 +1,7 @@
 export const baseSettings = {
     linesCount: 4,
     visibilityInMetres: 30,
-    step: 1,
+    step: 1.5,
     speed: {
         min: 0.075,
         max: 0.2

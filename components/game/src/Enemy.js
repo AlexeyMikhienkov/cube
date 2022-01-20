@@ -1,16 +1,13 @@
-import {MeshBasicMaterial} from "three";
+import {MeshBasicMaterial, Object3D} from "three";
 import {baseSettings} from "./settings";
 
-export default class Enemy extends THREE.Mesh {
+export default class Enemy extends Object3D {
     constructor() {
-        const {width: boxWidth, height: boxHeight, depth: boxDepth} = baseSettings.enemy.size;
+        super();
+    }
 
-        const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
-        const material = new MeshBasicMaterial({
-            color: 0xff0000,
-        });
+    create() {
 
-        super(geometry, material);
     }
 
     reset() {
