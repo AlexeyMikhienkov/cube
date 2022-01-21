@@ -41,7 +41,7 @@ export default class GameController {
 
         this.initField();
         this.initRaycaster();
-        this.initHelpers();
+       // this.initHelpers();
 
         this.setHeroStartPosition();
 
@@ -56,6 +56,7 @@ export default class GameController {
     }
 
     onKeyDown(event) {
+        event.preventDefault();
        // if (!this._started) return;
 
         switch(event.keyCode) {
@@ -149,6 +150,8 @@ export default class GameController {
         const {renderer, pointer, raycaster, hero, camera} = this;
         const canvasWidth = renderer.domElement.clientWidth;
         const canvasHeight = renderer.domElement.clientHeight;
+
+        event.preventDefault();
 
         pointer.set(
             ((event.clientX - event.target.offsetLeft) / canvasWidth) * 2 - 1,

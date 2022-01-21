@@ -70,7 +70,8 @@ export default class PathController {
 
         this._fieldHeight = linesCount * height + (linesCount - 1) * offset;
 
-        this._currentLine = randomIntFromRange(0, linesCount - 1);
+      //  this._currentLine = randomIntFromRange(0, linesCount - 1);
+        this._currentLine = 3
         this._emptyLines.push(this._currentLine);
     }
 
@@ -151,7 +152,7 @@ export default class PathController {
 
     /**
      * Проверка необходимости заполнения поля
-     * @param scene сцена
+     * @param scene сцена`
      * @param hero игрок (куб)
      */
     fieldCheckAndFill(scene, hero) {

@@ -27,7 +27,7 @@ export default class BigEnemy extends Enemy {
             this._meshes.push(new THREE.Mesh(geometry, material));
         }
 
-        for (let i = 0; i < dims.columns; i++) {
+        for (let i = 0; i < dims.columns - 1; i++) {
             this._offsetMeshes.push(new THREE.Mesh(geometryInOffset, material))
         }
 
@@ -46,7 +46,7 @@ export default class BigEnemy extends Enemy {
             }
 
         this._offsetMeshes[0].position.set(boxWidth * 2, 0, boxDepth - offset / 2);
-        this._offsetMeshes[1].position.set(boxWidth * 2, 0, boxDepth * 2 + offset / 2);
+        this._offsetMeshes[1].position.set(boxWidth * 2, 0, boxDepth - offset / 2 + boxDepth + offset);
 
         this._meshes.forEach(mesh => this.add(mesh));
 

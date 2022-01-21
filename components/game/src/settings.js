@@ -7,10 +7,10 @@ export const baseSettings = {
         max: 0.15
     },
     probability: {
-        min: 0.05,
+        min: 1,
         max: 1
     },
-    startOffset: 10,
+    startOffset: 0,
     blocksInLine: {
         min: 1,
         max: 20
