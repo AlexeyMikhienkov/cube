@@ -4,6 +4,7 @@ import {itemsFactory} from "./ItemsFactory";
 import Row from "./Row";
 import Cell from "./Cell";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
+import SmallEnemy from "./enemies/SmallEnemy";
 
 export default class PathController {
     /**
@@ -62,6 +63,10 @@ export default class PathController {
     static EMPTY_CELL = 0;
     static PATH_CELL = 1;
     static ENEMY_CELL = 2;
+    static TYPES = {
+        cell: "cell",
+        row: "row"
+    };
 
     /**
      * Конструктор класса
@@ -148,7 +153,6 @@ export default class PathController {
 
             itemsFactory.pushItem(row);
         });
-
     }
 
     /**
@@ -192,6 +196,7 @@ export default class PathController {
         const {maxHeight} = enemies;
         let lastRowId = 0;
 
+        //console.log(this._rows.length)
         const lastRow = this._rows[this._rows.length - 1];
 
         if (lastRow)
@@ -211,10 +216,12 @@ export default class PathController {
 
                 if (checkProbability(this._probability)) {
                     PathController.ENEMIES_TYPES.forEach(enemySettings => {
-                        if (enemySettings.dims.columns + column > this._linesCount ||
-                            enemySettings.dims.rows + row - 1 > endRow) return;
+                        const {dims, matrix} = enemySettings;
 
-                        if (this.canSetEnemy(row, column, enemySettings)) {
+                        if (dims.columns + column > this._linesCount ||
+                            dims.rows + row - 1 > endRow) return;
+
+                        if (!this.checkMatricesIntersects(row, column, matrix)) {
                             const enemy = this.createEnemy(row, column, enemySettings.type);
                             this.editCellsMatrix(row, column, enemy, enemySettings);
                             scene.add(enemy);
@@ -224,17 +231,35 @@ export default class PathController {
             }
     }
 
-    editCellsMatrix(row, column, enemy, enemySettings) {
+    checkMatricesIntersects(rowNumber, columnNumber, enemyMatrix) {
+        for (let row = 0; row < enemyMatrix.length; row++)
+            for (let column = 0; column < enemyMatrix[row].length; column++) {
+                const invertedRow = enemyMatrix.length - 1 - row;
+
+                if (enemyMatrix[row][column] === PathController.PATH_CELL &&
+                    !this.getCell(rowNumber + invertedRow, columnNumber + column)._isEmpty)
+                    return true;
+            }
+
+        return false;
+    }
+
+    getCell(row, column) {
+        const storage = itemsFactory.getStorage(PathController.TYPES.cell);
+        const cell = storage.createdItems.find(cell => cell._row === row && cell._column === column);
+     //   console.log("ЯЧЕЙКА", cell);
+
+        return cell;
+    }
+
+    editCellsMatrix(rowNumber, columnNumber, enemy, enemySettings) {
         const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemySettings;
 
-        const enemyMatrixReversed = [...enemyMatrix].reverse();
-
-        for (let i = 0; i < enemyMatrixRows; i++)
-            for (let j = 0; j < enemyMatrixColumns; j++) {
-                if (enemyMatrixReversed[i][j] === PathController.PATH_CELL) {
-                    const currentRow = this._rows.find(({_id}) => _id === row + i);
-
-                    const cell = currentRow.getCell(column + j);
+        for (let row = 0; row < enemyMatrixRows; row++)
+            for (let column = 0; column < enemyMatrixColumns; column++) {
+                if (enemyMatrix[row][column] === PathController.PATH_CELL) {
+                    const invertedRow = enemyMatrix.length - 1 - row;
+                    const cell = this.getCell(rowNumber + invertedRow, columnNumber + column);
 
                     if (cell) {
                         cell._enemy = enemy;
@@ -245,25 +270,6 @@ export default class PathController {
             }
 
         // console.log("!", enemyMatrixReversed, this._emptyLines, this._cellsMatrix)
-    }
-
-    canSetEnemy(rowNumber, column, enemySettings) {
-        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemySettings;
-
-        const checkedRows = this._rows.filter(({_id}) => _id >= rowNumber && _id < rowNumber + enemyMatrixRows);
-        const slicedCellsMatrix = checkedRows.map(({_cells}) => _cells.slice(column, column + enemyMatrixColumns));
-
-        return !(this.checkMatricesIntersects(enemyMatrix, slicedCellsMatrix));
-    }
-
-    checkMatricesIntersects(enemyMatrix, slicedCellsMatrix) {
-        for (let row = 0; row < enemyMatrix.length; row++)
-            for (let column = 0; column < enemyMatrix[row].length; column++)
-                if (enemyMatrix[row][column] === PathController.PATH_CELL &&
-                    !slicedCellsMatrix[row][column]._isEmpty)
-                    return true;
-
-        return false;
     }
 
     /**
@@ -311,7 +317,8 @@ export default class PathController {
         const maxRowId =  this._rows.length ? Math.max(...this._rows.map(row => row._id)) : -1;
 
         for (let column = 0; column < _linesCount; column++) {
-            const cell = new Cell(maxRowId + 1, column);
+            const cell = itemsFactory.getItem(PathController.TYPES.cell);
+            cell.init(maxRowId + 1, column);
 
             if (_emptyLines.includes(column))
                 cell._isEmpty = false;
@@ -319,7 +326,7 @@ export default class PathController {
             cells.push(cell);
         }
 
-        const newRow = itemsFactory.getItem("row");
+        const newRow = itemsFactory.getItem(PathController.TYPES.row);
         newRow.init(maxRowId + 1, cells);
 
         this._rows.push(newRow);

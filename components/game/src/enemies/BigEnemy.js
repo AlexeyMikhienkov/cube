@@ -6,10 +6,6 @@ export default class BigEnemy extends Enemy {
     _meshes = [];
     _offsetMeshes = [];
 
-    constructor() {
-        super();
-    }
-
     create() {
         super.create();
 

@@ -30,10 +30,6 @@ export default class FactoryStorage {
   push(item = {}) {
     const {items} = this;
 
-/*    console.log(this.items);
-    console.log(this.createdItems);
-    debugger*/
-
     if (items.indexOf(item) !== -1) {
       console.log("Item already added:", item);
       return this;

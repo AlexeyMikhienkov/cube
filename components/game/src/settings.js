@@ -4,13 +4,14 @@ export const baseSettings = {
     step: 1,
     speed: {
         min: 0.075,
-   //     max: 0.2
+        //max: 0.2
         max: 0.075
     },
     probability: {
-        min: 1,
+        min: 0.05,
         max: 1
     },
+    startOffset: 10,
     blocksInLine: {
         min: 1,
         max: 20

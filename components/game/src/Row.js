@@ -1,11 +1,9 @@
+import {itemsFactory} from "./ItemsFactory";
+
 export default class Row {
-    _id;
+    _id = null;
 
     _cells = [];
-
-    constructor() {
-
-    }
 
     init(number, cells) {
         this._id = number;
@@ -17,8 +15,12 @@ export default class Row {
     }
 
     reset() {
-        this._cells.forEach(cell => cell.reset());
+        this._cells.forEach(cell => {
+            itemsFactory.pushItem(cell);
+        });
+
         this._cells.length = 0;
+        this._id = null;
     }
 
 }

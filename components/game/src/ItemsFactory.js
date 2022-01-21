@@ -3,6 +3,7 @@ import SmallEnemy from "./enemies/SmallEnemy";
 import MediumEnemy from "./enemies/MediumEnemy";
 import BigEnemy from "./enemies/BigEnemy";
 import Row from "./Row";
+import Cell from "./Cell";
 
 class ItemsFactory extends Factory {
     constructor() {
@@ -24,6 +25,10 @@ class ItemsFactory extends Factory {
                 break;
             case "row":
                 item = new Row();
+                break;
+            case "cell":
+                item = new Cell();
+                break;
         }
 
         this.onCreateItem(type, item);

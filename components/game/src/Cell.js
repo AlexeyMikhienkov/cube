@@ -9,12 +9,11 @@ export default class Cell {
 
     _enemy = null;
 
-    _enemySettings;
+    _enemySettings = null;
 
-    constructor(row, column) {
+    init(row, column) {
         this._row = row;
         this._column = column;
-
     }
 
     reset() {
@@ -22,14 +21,16 @@ export default class Cell {
             const storage = itemsFactory.getStorage(this._enemySettings.type);
             const usedEnemies = storage.createdItems.filter(item => !storage.items.includes(item));
 
-            if (usedEnemies.includes(this._enemy)) {
-/*                console.log(this._row, this._column)
-                console.log("push item");*/
+            if (usedEnemies.includes(this._enemy))
                 itemsFactory.pushItem(this._enemy);
-                this._enemy = null;
-                this._enemySettings = null;
-            }
+
+            this._enemy = null;
         }
+
+        this._row = null;
+        this._column = null;
+        this._isEmpty = true;
+        this._enemySettings = null;
     }
 
 }
