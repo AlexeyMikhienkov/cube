@@ -4,8 +4,7 @@ export const baseSettings = {
     step: 1,
     speed: {
         min: 0.075,
-        //max: 0.2
-        max: 0.075
+        max: 0.15
     },
     probability: {
         min: 0.05,
@@ -16,7 +15,7 @@ export const baseSettings = {
         min: 1,
         max: 20
     },
-    secondsToMax: 30,
+    secondsToMax: 60,
     ticksPerSecond: 60,
     field: {
         offset: 0.5,
@@ -29,14 +28,14 @@ export const baseSettings = {
         size: {
             width: 1,
             height: 1,
-            depth: 1,
+            depth: 1
         }
     },
     hero: {
         size: {
             width: 0.8,
             height: 0.8,
-            depth: 0.8,
+            depth: 0.8
         }
     }
 };

@@ -1,10 +1,7 @@
 import {baseSettings, enemies, getDeltas, sortEnemiesDimensionsDesc} from "./settings";
 import checkProbability from "../../../utils/number/probability";
 import {itemsFactory} from "./ItemsFactory";
-import Row from "./Row";
-import Cell from "./Cell";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
-import SmallEnemy from "./enemies/SmallEnemy";
 
 export default class PathController {
     /**
@@ -41,11 +38,6 @@ export default class PathController {
     _speed = baseSettings.speed.min;
 
     /**
-     * Число линий в игре
-     */
-    _linesCount;
-
-    /**
      * Ширина поля с учетом всех линий и отступов между ними
      */
     _fieldHeight;
@@ -70,16 +62,15 @@ export default class PathController {
 
     /**
      * Конструктор класса
-     * @param linesCount число линий в игре
      */
-    constructor(linesCount) {
+    constructor() {
         const {offset, lineSize: {height}} = baseSettings.field;
 
-        this._linesCount = linesCount;
+        const {linesCount} = baseSettings;
+
         this._fieldHeight = linesCount * height + (linesCount - 1) * offset;
 
-        //this._currentLine = randomIntFromRange(0, linesCount - 1);
-        this._currentLine = 3;
+        this._currentLine = randomIntFromRange(0, linesCount - 1);
         this._emptyLines.push(this._currentLine);
     }
 
@@ -88,13 +79,14 @@ export default class PathController {
      * @returns {number|*}
      */
     chooseNewEmptyLine() {
-        const {_currentLine, _linesCount} = this;
+        const {_currentLine} = this;
+        const {linesCount} = baseSettings;
 
         switch (_currentLine) {
             case 0:
                 return 1;
-            case _linesCount - 1:
-                return _linesCount - 2;
+            case linesCount - 1:
+                return linesCount - 2;
             default:
                 const variants = [_currentLine - 1, _currentLine + 1];
                 return variants[Math.round(Math.random())];
@@ -121,15 +113,17 @@ export default class PathController {
      * @param column линия, на которой препятствие создается
      * @param type
      */
-    createEnemy(row, column, type) {
+    createEnemy(row, column, settings) {
         const {
             field: {offset, lineSize: {height}},
             enemy: {size: {width: enemyWidth, depth: enemyDepth}},
             step
         } = baseSettings;
 
+        const {type} = settings;
+
         const enemy = itemsFactory.getItem(type);
-        enemy.create();
+        enemy.create(settings);
 
         const posX = row * step;
         const posZ = height / 2 + (height + offset) * column - this._fieldHeight / 2;
@@ -159,9 +153,8 @@ export default class PathController {
      * Проверка необходимости заполнения поля
      * @param scene сцена
      * @param hero игрок (куб)
-     * @param camera камера
      */
-    fieldCheckAndFill(scene, hero, camera) {
+    fieldCheckAndFill(scene, hero) {
         const {visibilityInMetres, step} = baseSettings;
         const {maxHeight} = enemies;
 
@@ -176,12 +169,14 @@ export default class PathController {
         if (distance + visibilityInMetres >= currentRow * step + maxHeight) {
             this.createPathPart();
             this.setEnemiesOnField(scene);
-            this.fieldCheckAndFill(scene, hero, camera);
+            this.fieldCheckAndFill(scene, hero);
         }
     }
 
     setEnemiesOnField(scene) {
         const {maxHeight} = enemies;
+        const {linesCount} = baseSettings;
+
         let lastRowId = 0;
 
         const lastRow = this._rows[this._rows.length - 1];
@@ -198,7 +193,7 @@ export default class PathController {
             return;
 
         for (let row = startRow; row <= endRow; row++)
-            for (let column = 0; column < this._linesCount; column++) {
+            for (let column = 0; column < linesCount; column++) {
                 if (!this.getCell(row, column)._isEmpty)
                     continue;
 
@@ -206,11 +201,11 @@ export default class PathController {
                     PathController.ENEMIES_TYPES.forEach(enemySettings => {
                         const {dims, matrix} = enemySettings;
 
-                        if (dims.columns + column > this._linesCount ||
+                        if (dims.columns + column > linesCount ||
                             dims.rows + row - 1 > endRow) return;
 
                         if (!this.checkMatricesIntersects(row, column, matrix)) {
-                            const enemy = this.createEnemy(row, column, enemySettings.type);
+                            const enemy = this.createEnemy(row, column, enemySettings);
                             this.editCellsMatrix(row, column, enemy, enemySettings);
                             scene.add(enemy);
                         }
@@ -234,10 +229,7 @@ export default class PathController {
 
     getCell(row, column) {
         const storage = itemsFactory.getStorage(PathController.TYPES.cell);
-        const cell = storage.createdItems.find(cell => cell._row === row && cell._column === column);
-     //   console.log("ЯЧЕЙКА", cell);
-
-        return cell;
+        return storage.createdItems.find(cell => cell._row === row && cell._column === column);
     }
 
     editCellsMatrix(rowNumber, columnNumber, enemy, enemySettings) {
@@ -297,12 +289,14 @@ export default class PathController {
     }
 
     createNewRow() {
-        const {_linesCount, _emptyLines} = this;
+        const {_emptyLines} = this;
+        const {linesCount} = baseSettings;
+
         const cells = [];
 
         const maxRowId =  this._rows.length ? Math.max(...this._rows.map(row => row._id)) : -1;
 
-        for (let column = 0; column < _linesCount; column++) {
+        for (let column = 0; column < linesCount; column++) {
             const cell = itemsFactory.getItem(PathController.TYPES.cell);
             cell.init(maxRowId + 1, column);
 

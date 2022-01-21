@@ -1,10 +1,9 @@
-import gsap from "gsap"
 import Hero from "./Hero";
 import Field from "./Field";
 import {baseSettings} from "./settings";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
-import Enemy from "./Enemy";
 import PathController from "./PathController";
+import ActionController from "./ActionController";
 
 const {THREE} = global;
 
@@ -20,6 +19,7 @@ export default class GameController {
     _height;
     time = 0;
     pathController;
+    actionController;
     _started = false;
 
     constructor() {
@@ -43,11 +43,42 @@ export default class GameController {
         this.initRaycaster();
         this.initHelpers();
 
-        this.pathController = new PathController(this.field._lines.length);
+        this.setHeroStartPosition();
+
+        document.addEventListener('keydown', this.onKeyDown.bind(this));
+
+        this.pathController = new PathController();
+        this.actionController = new ActionController(this.field._lines);
 
         this.resize();
 
         this.animate()
+    }
+
+    onKeyDown(event) {
+       // if (!this._started) return;
+
+        switch(event.keyCode) {
+            case 37:
+                this.actionController.turnHero(this.hero, "left");
+                break;
+            case 39:
+                this.actionController.turnHero(this.hero, "right");
+                break;
+            default:
+                break;
+        }
+    }
+
+    setHeroStartPosition() {
+        const {hero, field: {_lines}} = this;
+        const {width, height} = baseSettings.hero.size;
+        const {linesCount} = baseSettings;
+
+        const centralLineIndex = Math.ceil(linesCount / 2);
+        const centralLine = _lines[centralLineIndex];
+
+        hero.position.set(width / 2, centralLine.position.y + height / 2, centralLine.position.z);
     }
 
     initHelpers() {
@@ -75,8 +106,6 @@ export default class GameController {
 
     initHero() {
         const hero = new Hero(this.time);
-
-        hero.position.set(hero.geometry.parameters.height / 2, hero.geometry.parameters.height / 2, 0);
 
         this.hero = hero;
         this.scene.add(hero);
@@ -131,7 +160,7 @@ export default class GameController {
         const intersects = raycaster.intersectObjects([hero], false);
 
         if (intersects.length > 0)
-            this._started = true;
+            this._started = !this._started;
     };
 
     animate = (t) => {

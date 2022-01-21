@@ -6,8 +6,10 @@ export default class BigEnemy extends Enemy {
     _meshes = [];
     _offsetMeshes = [];
 
-    create() {
+    create(settings) {
         super.create();
+
+        const {matrix, dims} = settings;
 
         const {width: boxWidth, height: boxHeight, depth: boxDepth} = baseSettings.enemy.size;
         const {offset} = baseSettings.field;
@@ -17,21 +19,31 @@ export default class BigEnemy extends Enemy {
             color: 0x0000ff,
         });
 
-        const geometryInOffset = new THREE.BoxGeometry(boxWidth , boxHeight, offset);
+        const geometryInOffset = new THREE.BoxGeometry(boxWidth, boxHeight, offset);
 
-        for (let i = 0; i < 5; i++) {
-            this._meshes.push(new THREE.Mesh(geometry, material))
+        const blocksCount = matrix.flat().reduce((prev, cur) => prev + cur, 0);
+
+        for (let i = 0; i < blocksCount; i++) {
+            this._meshes.push(new THREE.Mesh(geometry, material));
         }
 
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < dims.columns; i++) {
             this._offsetMeshes.push(new THREE.Mesh(geometryInOffset, material))
         }
 
-        this._meshes[0].position.set(0, 0, 0);
-        this._meshes[1].position.set(boxWidth, 0, 0);
-        this._meshes[2].position.set(boxWidth * 2, 0, 0);
-        this._meshes[3].position.set(boxWidth * 2, 0, boxHeight + offset);
-        this._meshes[4].position.set(boxWidth * 2, 0, (boxHeight + offset) * 2);
+        let meshesCounter = 0;
+
+        for (let row = 0; row < dims.rows; row++)
+            for (let column = 0; column < dims.columns; column++) {
+                if (matrix[row][column] === 1) {
+                    const invertedRow = dims.rows - 1 - row;
+                    const mesh = this._meshes[meshesCounter];
+
+                    mesh.position.set(boxWidth * invertedRow, 0, (boxHeight + offset) * column);
+
+                    meshesCounter++;
+                }
+            }
 
         this._offsetMeshes[0].position.set(boxWidth * 2, 0, boxDepth - offset / 2);
         this._offsetMeshes[1].position.set(boxWidth * 2, 0, boxDepth * 2 + offset / 2);
