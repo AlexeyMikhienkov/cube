@@ -181,22 +181,9 @@ export default class PathController {
     }
 
     setEnemiesOnField(scene) {
-        // Проверить, можем ли поставить препятствие (идти с самого крупного)
-        //   пройтись по всем вариациям постановки препятствия в ряду:
-        //    - если матрица препятствия не пересекается с путем, считаем вероятность установки)
-        //    - если пересекается, рассматриваем след вариант постановки препятствия
-        //    - если вариантов нет, переходим к след препятствию
-
-        // Для каждого препятствия заглядывать на n-1 шагов назад, где n - высота препятствия
-
-        // 1. Получить текущий номер ряда R
-        // 2. Вычесть n-1, начать поиск подстановки с него (с R-2)
-        // 3. Пройтись по рядам и от R-2 до R+2
-
         const {maxHeight} = enemies;
         let lastRowId = 0;
 
-        //console.log(this._rows.length)
         const lastRow = this._rows[this._rows.length - 1];
 
         if (lastRow)
@@ -207,11 +194,12 @@ export default class PathController {
         const startRow = rowNumber > 1 ? rowNumber - maxHeight + 1 : 0;
         const endRow = rowNumber + maxHeight - 1;
 
+        if (startRow < baseSettings.startOffset)
+            return;
+
         for (let row = startRow; row <= endRow; row++)
             for (let column = 0; column < this._linesCount; column++) {
-                const currentRow = this._rows.find(({_id}) => _id === row);
-
-                if (!currentRow.getCell(column)._isEmpty)
+                if (!this.getCell(row, column)._isEmpty)
                     continue;
 
                 if (checkProbability(this._probability)) {
@@ -268,8 +256,6 @@ export default class PathController {
                     }
                 }
             }
-
-        // console.log("!", enemyMatrixReversed, this._emptyLines, this._cellsMatrix)
     }
 
     /**
