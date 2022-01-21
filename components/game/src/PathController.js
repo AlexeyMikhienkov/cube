@@ -3,6 +3,7 @@ import checkProbability from "../../../utils/number/probability";
 import {itemsFactory} from "./ItemsFactory";
 import Row from "./Row";
 import Cell from "./Cell";
+import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 
 export default class PathController {
     /**
@@ -37,13 +38,6 @@ export default class PathController {
      * @private
      */
     _speed = baseSettings.speed.min;
-
-    /**
-     * Заполненное препятствиями пространство
-     * @type {number}
-     * @private
-     */
-    _currentFilledDistance = 0;
 
     /**
      * Число линий в игре
@@ -102,7 +96,6 @@ export default class PathController {
         }
     }
 
-
     /**
      * Выбор новой пустой линии
      */
@@ -150,13 +143,12 @@ export default class PathController {
         const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 10);
 
         deletingRows.forEach(row => {
-            row.reset();
-
             const deleteIndex = this._rows.indexOf(row);
             this._rows.splice(deleteIndex, 1);
+
+            itemsFactory.pushItem(row);
         });
 
-       // console.log(this._rows.length);
     }
 
     /**
@@ -166,13 +158,18 @@ export default class PathController {
      * @param camera камера
      */
     fieldCheckAndFill(scene, hero, camera) {
-        const {visibilityInMetres} = baseSettings;
-        const {_currentFilledDistance} = this;
+        const {visibilityInMetres, step} = baseSettings;
         const {maxHeight} = enemies;
 
         let distance = hero.position.x;
+        let currentRow = 0;
 
-        if (distance + visibilityInMetres >= _currentFilledDistance + maxHeight) {
+        const lastRow = this._rows[this._rows.length - 1];
+
+        if (lastRow)
+            currentRow = lastRow._id;
+
+        if (distance + visibilityInMetres >= currentRow * step + maxHeight) {
             this.createPathPart();
             this.setEnemiesOnField(scene);
             this.fieldCheckAndFill(scene, hero, camera);
@@ -193,8 +190,14 @@ export default class PathController {
         // 3. Пройтись по рядам и от R-2 до R+2
 
         const {maxHeight} = enemies;
+        let lastRowId = 0;
 
-        const rowNumber = this._currentFilledDistance / baseSettings.step * maxHeight;
+        const lastRow = this._rows[this._rows.length - 1];
+
+        if (lastRow)
+            lastRowId = lastRow._id;
+
+        const rowNumber = lastRowId - maxHeight + 1;
 
         const startRow = rowNumber > 1 ? rowNumber - maxHeight + 1 : 0;
         const endRow = rowNumber + maxHeight - 1;
@@ -207,23 +210,22 @@ export default class PathController {
                     continue;
 
                 if (checkProbability(this._probability)) {
-                    PathController.ENEMIES_TYPES.forEach(enemy => {
-                        if (enemy.dims.columns + column > this._linesCount ||
-                            enemy.dims.rows + row - 1 > endRow) return;
+                    PathController.ENEMIES_TYPES.forEach(enemySettings => {
+                        if (enemySettings.dims.columns + column > this._linesCount ||
+                            enemySettings.dims.rows + row - 1 > endRow) return;
 
-                        if (this.canSetEnemy(row, column, enemy)) {
-                            this.editCellsMatrix(row, column, enemy);
-                            scene.add(this.createEnemy(row, column, enemy.type))
+                        if (this.canSetEnemy(row, column, enemySettings)) {
+                            const enemy = this.createEnemy(row, column, enemySettings.type);
+                            this.editCellsMatrix(row, column, enemy, enemySettings);
+                            scene.add(enemy);
                         }
                     })
                 }
             }
-
-        this._currentFilledDistance += baseSettings.step;
     }
 
-    editCellsMatrix(row, column, enemy) {
-        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
+    editCellsMatrix(row, column, enemy, enemySettings) {
+        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemySettings;
 
         const enemyMatrixReversed = [...enemyMatrix].reverse();
 
@@ -232,21 +234,26 @@ export default class PathController {
                 if (enemyMatrixReversed[i][j] === PathController.PATH_CELL) {
                     const currentRow = this._rows.find(({_id}) => _id === row + i);
 
-                    currentRow.getCell(column + j)?._enemy = enemy;
-                    currentRow.getCell(column + j)?._isEmpty = false;
+                    const cell = currentRow.getCell(column + j);
+
+                    if (cell) {
+                        cell._enemy = enemy;
+                        cell._enemySettings = enemySettings;
+                        cell._isEmpty = false;
+                    }
                 }
             }
 
-       // console.log("!", enemyMatrixReversed, this._emptyLines, this._cellsMatrix)
+        // console.log("!", enemyMatrixReversed, this._emptyLines, this._cellsMatrix)
     }
 
-    canSetEnemy(rowNumber, column, enemy) {
-        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemy;
+    canSetEnemy(rowNumber, column, enemySettings) {
+        const {dims: {rows: enemyMatrixRows, columns: enemyMatrixColumns}, matrix: enemyMatrix} = enemySettings;
 
         const checkedRows = this._rows.filter(({_id}) => _id >= rowNumber && _id < rowNumber + enemyMatrixRows);
         const slicedCellsMatrix = checkedRows.map(({_cells}) => _cells.slice(column, column + enemyMatrixColumns));
 
-        return !(this.checkMatricesIntersects(enemyMatrix, slicedCellsMatrix))
+        return !(this.checkMatricesIntersects(enemyMatrix, slicedCellsMatrix));
     }
 
     checkMatricesIntersects(enemyMatrix, slicedCellsMatrix) {
@@ -283,7 +290,7 @@ export default class PathController {
             if (this._stepsCounter <= 0)
                 this._emptyLines.push(this.chooseNewEmptyLine());
 
-            this.createNewRow(steps, row);
+            this.createNewRow();
 
             if (this._emptyLines.length > 1) {
                 this.chooseNextCurrentLine();
@@ -297,14 +304,14 @@ export default class PathController {
         }
     }
 
-    createNewRow(steps, row) {
-        const {_currentFilledDistance, _linesCount, _emptyLines} = this;
+    createNewRow() {
+        const {_linesCount, _emptyLines} = this;
         const cells = [];
 
-        const rowNumber = _currentFilledDistance / baseSettings.step * steps + row;
+        const maxRowId =  this._rows.length ? Math.max(...this._rows.map(row => row._id)) : -1;
 
         for (let column = 0; column < _linesCount; column++) {
-            const cell = new Cell(rowNumber, column);
+            const cell = new Cell(maxRowId + 1, column);
 
             if (_emptyLines.includes(column))
                 cell._isEmpty = false;
@@ -313,7 +320,7 @@ export default class PathController {
         }
 
         const newRow = itemsFactory.getItem("row");
-        newRow.init(rowNumber, cells);
+        newRow.init(maxRowId + 1, cells);
 
         this._rows.push(newRow);
     }
