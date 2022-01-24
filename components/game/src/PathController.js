@@ -70,8 +70,7 @@ export default class PathController {
 
         this._fieldHeight = linesCount * height + (linesCount - 1) * offset;
 
-      //  this._currentLine = randomIntFromRange(0, linesCount - 1);
-        this._currentLine = 3
+        this._currentLine = randomIntFromRange(0, linesCount - 1);
         this._emptyLines.push(this._currentLine);
     }
 
