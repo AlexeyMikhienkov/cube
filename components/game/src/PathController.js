@@ -2,6 +2,7 @@ import {baseSettings, enemies, getDeltas, sortEnemiesDimensionsDesc} from "./set
 import checkProbability from "../../../utils/number/probability";
 import {itemsFactory} from "./ItemsFactory";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
+import SAT from "sat";
 
 export default class PathController {
     /**
@@ -50,6 +51,8 @@ export default class PathController {
     _emptyLines = [];
 
     _rows = [];
+
+    _collided = false;
 
     static ENEMIES_TYPES = sortEnemiesDimensionsDesc();
     static EMPTY_CELL = 0;
@@ -111,7 +114,7 @@ export default class PathController {
      * Создание препятствия
      * @param row
      * @param column линия, на которой препятствие создается
-     * @param type
+     * @param settings данные о препятствии
      */
     createEnemy(row, column, settings) {
         const {
@@ -123,7 +126,19 @@ export default class PathController {
         const {type} = settings;
 
         const enemy = itemsFactory.getItem(type);
+
+        /*        if (type === "medium") {
+                    console.log("enemy from factory", enemy);
+                    debugger
+                }*/
+
         enemy.create(settings);
+
+        /*        if (type === "medium") {
+                    console.log("enemy after create", enemy);
+                    console.log("current enemy X", row * step);
+                    debugger
+                }*/
 
         const posX = row * step;
         const posZ = height / 2 + (height + offset) * column - this._fieldHeight / 2;
@@ -140,6 +155,27 @@ export default class PathController {
     checkPassedEnemies(hero) {
         const currentRow = Math.floor(hero.position.x / baseSettings.step);
         const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 10);
+
+        const delRow = deletingRows[0];
+
+        /*        if (delRow) {
+                    if (delRow._cells.some(cell => cell._enemy instanceof MediumEnemy)) {
+                        console.log(delRow);
+                        console.log("hero", hero.position.x);
+                        debugger
+                    }
+
+                 //   debugger
+                }*/
+
+        //TODO: неверно удаляется препятствие 2х2
+        /*        if (deletingRows.length > 0) {
+                    console.log(hero.position.x);
+                    const filtered = this._rows.filter(row => Math.abs(Math.floor(hero.position.x) - row._id) < 15);
+                    console.log(filtered)
+                    console.log(deletingRows);
+                    debugger
+                }*/
 
         deletingRows.forEach(row => {
             const deleteIndex = this._rows.indexOf(row);
@@ -258,8 +294,8 @@ export default class PathController {
      * @param started проверка, начата ли игра
      */
     updateValues(scene, hero, camera, lines, started) {
-        if (started)
-            this.updateOnTick(hero, camera, lines);
+        if (started && !this.collided)
+            this.updateOnTick(hero, camera, lines, scene);
 
         this.fieldCheckAndFill(scene, hero, camera);
         this.checkPassedEnemies(hero);
@@ -294,7 +330,7 @@ export default class PathController {
 
         const cells = [];
 
-        const maxRowId =  this._rows.length ? Math.max(...this._rows.map(row => row._id)) : -1;
+        const maxRowId = this._rows.length ? Math.max(...this._rows.map(row => row._id)) : -1;
 
         for (let column = 0; column < linesCount; column++) {
             const cell = itemsFactory.getItem(PathController.TYPES.cell);
@@ -305,6 +341,8 @@ export default class PathController {
 
             cells.push(cell);
         }
+
+        //  console.log("new row id:", maxRowId + 1);
 
         const newRow = itemsFactory.getItem(PathController.TYPES.row);
         newRow.init(maxRowId + 1, cells);
@@ -318,8 +356,8 @@ export default class PathController {
      * @param camera камера
      * @param lines дорожки для движения
      */
-    updateOnTick(hero, camera, lines) {
-        const {speed, probability, blocksInLine, backOffset} = baseSettings;
+    updateOnTick(hero, camera, lines, scene) {
+        const {speed, probability, blocksInLine, backOffset, step} = baseSettings;
 
         if (this._probability < probability.max)
             this._probability += getDeltas().probability;
@@ -330,10 +368,48 @@ export default class PathController {
         if (this._maxCounter > blocksInLine.min)
             this._maxCounter -= getDeltas().blocksCounter;
 
+        const nearRowsFiltered = this._rows.filter(({_id}) => Math.abs(_id * step - hero.position.x) < 3);
+
+        nearRowsFiltered.forEach(row => {
+            row._cells.forEach(cell => {
+                if (cell._enemy) {
+                    this.collided = this.checkCollision(hero, cell);
+                    if (this.collided) {
+                        console.log(cell);
+                        console.log(hero);
+                        debugger
+                    }
+                }
+            })
+        });
+
         hero.position.x += this._speed;
         camera.position.x += this._speed;
 
         if (hero.position.x > backOffset)
             lines.forEach(line => line.position.x += this._speed);
+    }
+
+    checkCollision(hero, cell) {
+        const {
+            hero: {size: {width, depth}},
+            enemy: {size: {width: enemyWidth, depth: enemyDepth}}
+        } = baseSettings;
+
+        const enemyPosition = cell._enemy.position;
+
+        const heroBox = new SAT.Box(
+            new SAT.Vector(hero.position.x - width / 2, hero.position.z - depth / 2),
+            width,
+            depth
+        ).toPolygon();
+
+        const enemyBox = new SAT.Box(
+            new SAT.Vector(enemyPosition.x - enemyWidth / 2, enemyPosition.z - enemyDepth / 2),
+            enemyWidth,
+            enemyDepth
+        ).toPolygon();
+
+        return SAT.testPolygonPolygon(heroBox, enemyBox);
     }
 }

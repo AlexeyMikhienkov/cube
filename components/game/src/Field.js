@@ -16,6 +16,8 @@ export default class Field {
             line.position.set(width / 2, 0, height / 2 + (height + offset) * index - fieldHeight / 2);
             line.rotation.x = Math.PI / 2;
 
+            console.log(line.position);
+
             scene.add(line)
         });
     }

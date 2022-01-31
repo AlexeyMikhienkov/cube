@@ -18,6 +18,9 @@ export default class Cell {
 
     reset() {
         if (this._enemy) {
+/*            console.log(this._row, this._column, this._enemy._storageType);
+            debugger*/
+
             const storage = itemsFactory.getStorage(this._enemySettings.type);
             const usedEnemies = storage.createdItems.filter(item => !storage.items.includes(item));
 
