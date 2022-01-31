@@ -4,6 +4,7 @@ import {baseSettings} from "./settings";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import PathController from "./PathController";
 import ActionController from "./ActionController";
+import Hammer from "hammerjs";
 
 const {THREE} = global;
 
@@ -39,9 +40,12 @@ export default class GameController {
 
         renderer.domElement.addEventListener('click', this.onClick);
 
+        const hammer = new Hammer(renderer.domElement);
+        hammer.on("swipeleft swiperight", this.onSwipe);
+
         this.initField();
         this.initRaycaster();
-        this.initHelpers();
+     //   this.initHelpers();
 
         this.setHeroStartPosition();
 
@@ -54,6 +58,21 @@ export default class GameController {
 
         this.animate()
     }
+
+    onSwipe = (event) => {
+        event.preventDefault();
+
+        switch(event.type) {
+            case "swipeleft":
+                this.actionController.turnHero(this.hero, "left");
+                break;
+            case "swiperight":
+                this.actionController.turnHero(this.hero, "right");
+                break;
+            default:
+                break;
+        }
+    };
 
     onKeyDown(event) {
         event.preventDefault();
