@@ -45,7 +45,7 @@ export default class GameController {
 
         this.initField();
         this.initRaycaster();
-     //   this.initHelpers();
+        this.initHelpers();
 
         this.setHeroStartPosition();
 
@@ -133,7 +133,6 @@ export default class GameController {
 
     initField() {
         const field = new Field(baseSettings.linesCount);
-
         this.field = field;
 
         field.initLines(this.scene);
@@ -186,11 +185,11 @@ export default class GameController {
     };
 
     animate = (t) => {
-        const {renderer, scene, camera, hero, pathController, _started} = this;
+        const {renderer, scene, camera, hero, pathController, _started, field: {_lines}} = this;
 
         hero.material.time = t;
 
-        pathController.updateValues(scene, hero, camera, _started);
+        pathController.updateValues(scene, hero, camera, _lines, _started);
 
         renderer.render(scene, camera);
 

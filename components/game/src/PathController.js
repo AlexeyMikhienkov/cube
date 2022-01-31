@@ -257,9 +257,9 @@ export default class PathController {
      * @param camera камера
      * @param started проверка, начата ли игра
      */
-    updateValues(scene, hero, camera, started) {
+    updateValues(scene, hero, camera, lines, started) {
         if (started)
-            this.updateOnTick(hero, camera);
+            this.updateOnTick(hero, camera, lines);
 
         this.fieldCheckAndFill(scene, hero, camera);
         this.checkPassedEnemies(hero);
@@ -316,9 +316,10 @@ export default class PathController {
      * Обновление игровых значений на каждый тик
      * @param hero герой
      * @param camera камера
+     * @param lines дорожки для движения
      */
-    updateOnTick(hero, camera) {
-        const {speed, probability, blocksInLine} = baseSettings;
+    updateOnTick(hero, camera, lines) {
+        const {speed, probability, blocksInLine, backOffset} = baseSettings;
 
         if (this._probability < probability.max)
             this._probability += getDeltas().probability;
@@ -331,5 +332,8 @@ export default class PathController {
 
         hero.position.x += this._speed;
         camera.position.x += this._speed;
+
+        if (hero.position.x > backOffset)
+            lines.forEach(line => line.position.x += this._speed);
     }
 }

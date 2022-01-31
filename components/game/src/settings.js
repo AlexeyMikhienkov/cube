@@ -1,6 +1,7 @@
 export const baseSettings = {
     linesCount: 4,
     visibilityInMetres: 30,
+    backOffset: 5,
     step: 1,
     speed: {
         min: 0.075,
@@ -20,7 +21,9 @@ export const baseSettings = {
     field: {
         offset: 0.5,
         lineSize: {
-            width: 15,
+            get width() {
+                return baseSettings.visibilityInMetres + baseSettings.backOffset
+            },
             height: 1
         }
     },
