@@ -3,6 +3,7 @@ import checkProbability from "../../../utils/number/probability";
 import {itemsFactory} from "./ItemsFactory";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 import SAT from "sat";
+import {MeshBasicMaterial} from "three";
 
 export default class PathController {
     /**
@@ -126,19 +127,7 @@ export default class PathController {
         const {type} = settings;
 
         const enemy = itemsFactory.getItem(type);
-
-        /*        if (type === "medium") {
-                    console.log("enemy from factory", enemy);
-                    debugger
-                }*/
-
         enemy.create(settings);
-
-        /*        if (type === "medium") {
-                    console.log("enemy after create", enemy);
-                    console.log("current enemy X", row * step);
-                    debugger
-                }*/
 
         const posX = row * step;
         const posZ = height / 2 + (height + offset) * column - this._fieldHeight / 2;
@@ -294,7 +283,7 @@ export default class PathController {
      * @param started проверка, начата ли игра
      */
     updateValues(scene, hero, camera, lines, started) {
-        if (started && !this.collided)
+        if (started && !this._collided)
             this.updateOnTick(hero, camera, lines, scene);
 
         this.fieldCheckAndFill(scene, hero, camera);
@@ -368,15 +357,18 @@ export default class PathController {
         if (this._maxCounter > blocksInLine.min)
             this._maxCounter -= getDeltas().blocksCounter;
 
-        const nearRowsFiltered = this._rows.filter(({_id}) => Math.abs(_id * step - hero.position.x) < 3);
+        const nearRowsFiltered = this._rows.filter(({_id}) => _id * step - hero.position.x < 3);
 
         nearRowsFiltered.forEach(row => {
+            console.log(row);
             row._cells.forEach(cell => {
                 if (cell._enemy) {
-                    this.collided = this.checkCollision(hero, cell);
-                    if (this.collided) {
-                        console.log(cell);
-                        console.log(hero);
+                    const collided = this.checkCollision(hero, cell);
+                    if (collided) {
+                        console.log("ячейка пересечения:", cell);
+                        this._collided = collided;
+                        console.log("collided");
+                        this.createTestSAT(hero, cell, scene);
                         debugger
                     }
                 }
@@ -393,10 +385,12 @@ export default class PathController {
     checkCollision(hero, cell) {
         const {
             hero: {size: {width, depth}},
-            enemy: {size: {width: enemyWidth, depth: enemyDepth}}
+            enemy: {size: {width: enemyWidth, depth: enemyDepth}},
+            field: {offset, lineSize: {height}},
+            step, linesCount
         } = baseSettings;
 
-        const enemyPosition = cell._enemy.position;
+        const fieldHeight = linesCount * height + (linesCount - 1) * offset;
 
         const heroBox = new SAT.Box(
             new SAT.Vector(hero.position.x - width / 2, hero.position.z - depth / 2),
@@ -405,11 +399,43 @@ export default class PathController {
         ).toPolygon();
 
         const enemyBox = new SAT.Box(
-            new SAT.Vector(enemyPosition.x - enemyWidth / 2, enemyPosition.z - enemyDepth / 2),
+            new SAT.Vector(cell._row * step, (height + offset) * cell._column - fieldHeight / 2 + (height - depth) / 2),
             enemyWidth,
             enemyDepth
         ).toPolygon();
 
         return SAT.testPolygonPolygon(heroBox, enemyBox);
+    }
+
+    createTestSAT(hero, cell, scene) {
+        const {
+            hero: {size: {width, depth}},
+            enemy: {size: {width: enemyWidth, depth: enemyDepth}},
+            field: {offset, lineSize: {height}},
+            step, linesCount
+        } = baseSettings;
+
+        const fieldHeight = linesCount * height + (linesCount - 1) * offset;
+
+        const geometryEnemy = new THREE.PlaneGeometry(enemyWidth, enemyDepth);
+        const material = new MeshBasicMaterial({color: 0xff00ff, side: THREE.DoubleSide});
+
+        const meshEnemy = new THREE.Mesh(geometryEnemy, material);
+        scene.add(meshEnemy);
+
+        const geometryHero = new THREE.PlaneGeometry(width, depth);
+
+        const meshHero = new THREE.Mesh(geometryHero, material);
+        scene.add(meshHero);
+
+        meshHero.rotation.x = Math.PI / 2;
+        meshEnemy.rotation.x = Math.PI / 2;
+
+        meshHero.position.set(hero.position.x, 0.1, hero.position.z);
+        meshEnemy.position.set(
+            cell._row * step + enemyWidth / 2,
+            0.1,
+            (height + offset) * cell._column - fieldHeight / 2 + (height - enemyDepth) / 2 + enemyDepth / 2
+        );
     }
 }

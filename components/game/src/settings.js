@@ -29,9 +29,9 @@ export const baseSettings = {
     },
     enemy: {
         size: {
-            width: 1,
-            height: 1,
-            depth: 1
+            width: 0.5,
+            height: 0.5,
+            depth: 0.5
         }
     },
     hero: {

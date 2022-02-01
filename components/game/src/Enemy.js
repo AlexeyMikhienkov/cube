@@ -10,7 +10,7 @@ export default class Enemy extends Object3D {
         const {matrix, dims, type} = settings;
 
         const {width: boxWidth, height: boxHeight, depth: boxDepth} = baseSettings.enemy.size;
-        const {offset} = baseSettings.field;
+        const {step, field: {offset, lineSize: {height}}} = baseSettings;
 
         const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
         const offsetGeometry = new THREE.BoxGeometry(boxWidth, boxHeight, offset);
@@ -21,14 +21,14 @@ export default class Enemy extends Object3D {
                         type === 'big' ? 0x0000ff : null
             });
 
-
         for (let row = 0; row < dims.rows; row++)
             for (let column = 0; column < dims.columns; column++) {
                 if (matrix[row][column] === 1) {
                     const invertedRow = dims.rows - 1 - row;
                     const mesh = new THREE.Mesh(geometry, material);
 
-                    mesh.position.set(boxWidth * invertedRow, 0, (boxHeight + offset) * column);
+                   // mesh.position.set(boxWidth * invertedRow, 0, (boxDepth + offset) * column);
+                    mesh.position.set(step * invertedRow, 0, (height + offset) * column);
                     this.add(mesh);
                 }
 
@@ -36,7 +36,8 @@ export default class Enemy extends Object3D {
                     const invertedRow = dims.rows - 1 - row;
                     const offsetMesh = new THREE.Mesh(offsetGeometry, material);
 
-                    offsetMesh.position.set(boxWidth * invertedRow, 0, boxDepth - offset / 2 + (boxDepth + offset) * column);
+                   // offsetMesh.position.set(boxWidth * invertedRow, 0, boxDepth - offset / 2 + (boxDepth + offset) * column);
+                    offsetMesh.position.set(step * invertedRow, 0, height - offset / 2 + (height + offset) * column);
                     this.add(offsetMesh);
                 }
             }
