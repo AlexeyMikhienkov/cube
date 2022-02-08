@@ -45,7 +45,7 @@ export default class GameController {
 
         this.initField();
         this.initRaycaster();
-        this.initHelpers();
+     //   this.initHelpers();
 
         this.setHeroStartPosition();
 
@@ -129,6 +129,8 @@ export default class GameController {
 
         this.hero = hero;
         this.scene.add(hero);
+
+        global.hero = hero;
     }
 
     initField() {

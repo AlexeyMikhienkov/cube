@@ -5,6 +5,11 @@ import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 import SAT from "sat";
 import {MeshBasicMaterial} from "three";
 
+//TODO: добавить пустой ряд при выборе нового ряда (проверить, правильно ли считаются препятствия)
+// исправить: пропадают желтые препятствия до проезда через них
+
+//TODO: прочекать параметр visibilityInMetres!!!
+
 export default class PathController {
     /**
      * Текущая линия без препятствий
@@ -76,6 +81,8 @@ export default class PathController {
 
         this._currentLine = randomIntFromRange(0, linesCount - 1);
         this._emptyLines.push(this._currentLine);
+
+        global.game = this;
     }
 
     /**
@@ -142,54 +149,40 @@ export default class PathController {
      * @param hero игрок (куб)
      */
     checkPassedEnemies(hero) {
+        const {maxHeight} = enemies;
+
         const currentRow = Math.floor(hero.position.x / baseSettings.step);
-        const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 10);
+        const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 5 && _id > currentRow - 5 - maxHeight);
 
-        const delRow = deletingRows[0];
+        if (deletingRows.length < maxHeight) return;
 
-        /*        if (delRow) {
-                    if (delRow._cells.some(cell => cell._enemy instanceof MediumEnemy)) {
-                        console.log(delRow);
-                        console.log("hero", hero.position.x);
-                        debugger
-                    }
-
-                 //   debugger
-                }*/
-
-        //TODO: неверно удаляется препятствие 2х2
-        /*        if (deletingRows.length > 0) {
-                    console.log(hero.position.x);
-                    const filtered = this._rows.filter(row => Math.abs(Math.floor(hero.position.x) - row._id) < 15);
-                    console.log(filtered)
-                    console.log(deletingRows);
-                    debugger
-                }*/
+        console.log(deletingRows);
+        debugger
 
         deletingRows.forEach(row => {
             const deleteIndex = this._rows.indexOf(row);
             this._rows.splice(deleteIndex, 1);
 
             itemsFactory.pushItem(row);
+
+            console.log("ROWS", this._rows);
+            debugger
         });
     }
 
     /**
      * Проверка необходимости заполнения поля
-     * @param scene сцена`
+     * @param scene сцена
      * @param hero игрок (куб)
      */
+    //TODO: ОШИБКА В ЭТОМ МЕТОДЕ!
+    // ошибка зависит от visibilityInMetres
     fieldCheckAndFill(scene, hero) {
         const {visibilityInMetres, step} = baseSettings;
         const {maxHeight} = enemies;
 
         let distance = hero.position.x;
-        let currentRow = 0;
-
-        const lastRow = this._rows[this._rows.length - 1];
-
-        if (lastRow)
-            currentRow = lastRow._id;
+        const currentRow = this._rows[this._rows.length - 1]?._id || 0;
 
         if (distance + visibilityInMetres >= currentRow * step + maxHeight) {
             this.createPathPart();
@@ -231,6 +224,11 @@ export default class PathController {
 
                         if (!this.checkMatricesIntersects(row, column, matrix)) {
                             const enemy = this.createEnemy(row, column, enemySettings);
+
+                            console.log("CREATE enemy", row, column);
+                            console.log("enemy uuid:", enemy.uuid);
+                            console.log("______");
+
                             this.editCellsMatrix(row, column, enemy, enemySettings);
                             scene.add(enemy);
                         }
@@ -296,8 +294,10 @@ export default class PathController {
         const {blocksInLine} = baseSettings;
 
         for (let row = 0; row < steps; row++) {
-            if (this._stepsCounter <= 0)
-                this._emptyLines.push(this.chooseNewEmptyLine());
+            if (this._stepsCounter <= 0) {
+                const newEmpty = this.chooseNewEmptyLine();
+                this._emptyLines.push(newEmpty);
+            }
 
             this.createNewRow();
 
@@ -331,8 +331,6 @@ export default class PathController {
             cells.push(cell);
         }
 
-        //  console.log("new row id:", maxRowId + 1);
-
         const newRow = itemsFactory.getItem(PathController.TYPES.row);
         newRow.init(maxRowId + 1, cells);
 
@@ -360,10 +358,11 @@ export default class PathController {
         const nearRowsFiltered = this._rows.filter(({_id}) => _id * step - hero.position.x < 3);
 
         nearRowsFiltered.forEach(row => {
-            console.log(row);
+            //     console.log(row);
             row._cells.forEach(cell => {
                 if (cell._enemy) {
-                    const collided = this.checkCollision(hero, cell);
+                    // const collided = this.checkCollision(hero, cell);
+                    const collided = false;
                     if (collided) {
                         console.log("ячейка пересечения:", cell);
                         this._collided = collided;

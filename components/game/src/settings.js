@@ -1,20 +1,22 @@
 export const baseSettings = {
     linesCount: 4,
-    visibilityInMetres: 30,
+    visibilityInMetres: 10,
     backOffset: 5,
     step: 1,
     speed: {
-        min: 0.075,
-        max: 0.15
+     //   min: 0.075,
+     //   max: 0.15
+        min: 0.05,
+        max: 0.05,
     },
     probability: {
-        min: 0.1,
+        min: 0.7,
         max: 1
     },
     startOffset: 10,
     blocksInLine: {
         min: 1,
-        max: 20
+        max: 10
     },
     secondsToMax: 60,
     ticksPerSecond: 60,
@@ -29,9 +31,9 @@ export const baseSettings = {
     },
     enemy: {
         size: {
-            width: 0.5,
-            height: 0.5,
-            depth: 0.5
+            width: 1,
+            height: 1,
+            depth: 1
         }
     },
     hero: {
@@ -55,16 +57,16 @@ export function getDeltas() {
 
 export const enemies = {
     types: {
-        small: [[1]],
+    //    small: [[1]],
         medium: [
             [1, 1],
             [1, 1]
         ],
-        big: [
+/*        big: [
             [1, 1, 1],
             [1, 0, 0],
             [1, 0, 0]
-        ]
+        ]*/
     },
     get maxHeight() {
         const sizes = Object.values(this.types).map(matrix => matrix.length);
