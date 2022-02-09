@@ -17,7 +17,7 @@ export default class Cell {
     }
 
     reset() {
-        if (this._enemy) {
+/*        if (this._enemy) {
             const storage = itemsFactory.getStorage(this._enemySettings.type);
             const usedEnemies = storage.createdItems.filter(item => !storage.items.includes(item));
 
@@ -39,7 +39,7 @@ export default class Cell {
             }
 
             this._enemy = null;
-        }
+        }*/
 
         this._row = null;
         this._column = null;

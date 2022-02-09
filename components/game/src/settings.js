@@ -10,7 +10,8 @@ export const baseSettings = {
         max: 0.05,
     },
     probability: {
-        min: 0.7,
+    //    min: 0.1,
+        min: 1,
         max: 1
     },
     startOffset: 10,
@@ -57,16 +58,16 @@ export function getDeltas() {
 
 export const enemies = {
     types: {
-    //    small: [[1]],
-        medium: [
+  //      small: [[1]],
+/*        medium: [
             [1, 1],
             [1, 1]
-        ],
-/*        big: [
+        ],*/
+        big: [
             [1, 1, 1],
             [1, 0, 0],
             [1, 0, 0]
-        ]*/
+        ]
     },
     get maxHeight() {
         const sizes = Object.values(this.types).map(matrix => matrix.length);

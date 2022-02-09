@@ -5,7 +5,7 @@ import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 import SAT from "sat";
 import {MeshBasicMaterial} from "three";
 
-//TODO: добавить пустой ряд при выборе нового ряда (проверить, правильно ли считаются препятствия)
+//TODO: убрать возможность ставить препятствие на блок перед сменой дорожки
 // исправить: пропадают желтые препятствия до проезда через них
 
 //TODO: прочекать параметр visibilityInMetres!!!
@@ -93,6 +93,8 @@ export default class PathController {
         const {_currentLine} = this;
         const {linesCount} = baseSettings;
 
+        return 3;
+
         switch (_currentLine) {
             case 0:
                 return 1;
@@ -115,7 +117,8 @@ export default class PathController {
         if (currentLineIndex !== -1)
             _emptyLines.splice(currentLineIndex, 1);
 
-        this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
+      //  this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
+        this._currentLine = 3;
     }
 
     /**
@@ -152,22 +155,79 @@ export default class PathController {
         const {maxHeight} = enemies;
 
         const currentRow = Math.floor(hero.position.x / baseSettings.step);
-        const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 5 && _id > currentRow - 5 - maxHeight);
+        const deletingRows = this._rows.filter(({_id}) => _id < currentRow - 5);
 
         if (deletingRows.length < maxHeight) return;
 
-        console.log(deletingRows);
-        debugger
-
         deletingRows.forEach(row => {
-            const deleteIndex = this._rows.indexOf(row);
-            this._rows.splice(deleteIndex, 1);
-
-            itemsFactory.pushItem(row);
+            console.log("____");
+            console.log(deletingRows);
+            deletingRows.forEach(row => console.log("deleting rows", row))
+            console.log("check row", row._id)
+            //TODO: чистить найденные препятствия
+            row._cells.forEach(cell => {
+                if (cell._enemy !== null) {
+                    const {dims} = cell._enemySettings;
+                    if (cell._row + dims.rows - 1 <= Math.max(...deletingRows.map(row => row._id)))
+                        this.clearEnemyByMatrix(cell);
+                }
+            });
 
             console.log("ROWS", this._rows);
             debugger
+
+            if (row._cells.every(cell => cell._enemy === null)) {
+                console.log("no enemies in row", row._id);
+                debugger
+
+                const deleteIndex = this._rows.indexOf(row);
+                this._rows.splice(deleteIndex, 1);
+
+                itemsFactory.pushItem(row);
+            }
+
+            console.log("ROWS AFTER PUSH ITEM", this._rows);
+            debugger
         });
+    }
+
+    //TODO: проверить метод
+    clearEnemyByMatrix(startCell) {
+        const {matrix} = startCell._enemySettings;
+
+        console.log("________");
+        console.log("clear enemy by matrix!!!");
+        console.log(`DELETE: row: ${startCell._row}, column: ${startCell._column}`);
+        console.log(`enemy uuid`, startCell._enemy.uuid);
+        debugger
+
+        itemsFactory.pushItem(startCell._enemy);
+
+        for (let row = 0; row < matrix.length; row++) {
+            for (let column = 0; column < matrix[row].length; column++) {
+                const invertedRow = matrix.length - 1 - row;
+
+                if (matrix[invertedRow][column] === 0) return;
+
+/*                if (startCell._enemy)
+                    itemsFactory.pushItem(startCell._enemy);*/
+
+                const currentCell = this.getCell(startCell._row + row, startCell._column + column);
+
+                console.log("current cell", currentCell);
+                debugger
+
+                currentCell._enemy = null;
+                currentCell._enemySettings = null;
+
+                console.log("current cell AFTER", currentCell);
+                debugger
+            }
+        }
+
+
+        console.log("ROWS", this._rows);
+        debugger
     }
 
     /**
@@ -228,6 +288,7 @@ export default class PathController {
                             console.log("CREATE enemy", row, column);
                             console.log("enemy uuid:", enemy.uuid);
                             console.log("______");
+                            debugger
 
                             this.editCellsMatrix(row, column, enemy, enemySettings);
                             scene.add(enemy);
@@ -361,7 +422,7 @@ export default class PathController {
             //     console.log(row);
             row._cells.forEach(cell => {
                 if (cell._enemy) {
-                    // const collided = this.checkCollision(hero, cell);
+                    //const collided = this.checkCollision(hero, cell);
                     const collided = false;
                     if (collided) {
                         console.log("ячейка пересечения:", cell);
