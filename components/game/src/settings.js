@@ -1,17 +1,14 @@
 export const baseSettings = {
     linesCount: 4,
-    visibilityInMetres: 10,
+    visibilityInMetres: 30,
     backOffset: 5,
-    step: 1,
+    step: 1.25,
     speed: {
-     //   min: 0.075,
-     //   max: 0.15
-        min: 0.05,
-        max: 0.05,
+        min: 0.075,
+        max: 0.12
     },
     probability: {
-    //    min: 0.1,
-        min: 1,
+        min: 0.1,
         max: 1
     },
     startOffset: 10,
@@ -32,9 +29,9 @@ export const baseSettings = {
     },
     enemy: {
         size: {
-            width: 1,
-            height: 1,
-            depth: 1
+            width: 0.7,
+            height: 0.7,
+            depth: 0.7
         }
     },
     hero: {

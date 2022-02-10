@@ -31,8 +31,8 @@ export default class ActionController {
 
         gsap.to(hero.position, {
             z: coords.z,
-            duration: 0.1,
-            ease: "sine.inOut"
+            duration: 0.5,
+            ease: "back.out(1.25)"
         });
 
     }

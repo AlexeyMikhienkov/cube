@@ -317,6 +317,7 @@ export default class PathController {
             if (this._stepsCounter <= 0) {
                 const newEmpty = this.chooseNewEmptyLine();
                 this._emptyLines.push(newEmpty);
+
             }
 
             this.createNewRow();
@@ -366,22 +367,16 @@ export default class PathController {
     updateOnTick(hero, camera, lines, scene) {
         const {speed, probability, blocksInLine, backOffset, step} = baseSettings;
 
-        if (this._probability < probability.max)
-            this._probability += getDeltas().probability;
-
-        if (this._speed < speed.max)
-            this._speed += getDeltas().speed;
-
-        if (this._maxCounter > blocksInLine.min)
-            this._maxCounter -= getDeltas().blocksCounter;
+        this._probability = Math.min(this._probability + getDeltas().probability, probability.max);
+        this._speed = Math.min(this._speed + getDeltas().speed, speed.max);
+        this._maxCounter = Math.max(this._maxCounter - getDeltas().blocksCounter, blocksInLine.min);
 
         const nearRowsFiltered = this._rows.filter(({_id}) => _id * step - hero.position.x < 3);
 
         nearRowsFiltered.forEach(row => {
             row._cells.forEach(cell => {
                 if (cell._enemy) {
-                    //const collided = this.checkCollision(hero, cell);
-                    const collided = false;
+                    const collided = this.checkCollision(hero, cell);
                     if (collided) {
                         console.log("ячейка пересечения:", cell);
                         this._collided = collided;
