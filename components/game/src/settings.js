@@ -58,11 +58,11 @@ export function getDeltas() {
 
 export const enemies = {
     types: {
-  //      small: [[1]],
-/*        medium: [
+        small: [[1]],
+        medium: [
             [1, 1],
             [1, 1]
-        ],*/
+        ],
         big: [
             [1, 1, 1],
             [1, 0, 0],

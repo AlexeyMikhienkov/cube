@@ -93,8 +93,6 @@ export default class PathController {
         const {_currentLine} = this;
         const {linesCount} = baseSettings;
 
-        return 3;
-
         switch (_currentLine) {
             case 0:
                 return 1;
@@ -117,8 +115,7 @@ export default class PathController {
         if (currentLineIndex !== -1)
             _emptyLines.splice(currentLineIndex, 1);
 
-      //  this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
-        this._currentLine = 3;
+        this._currentLine = _emptyLines[Math.floor(Math.random() * _emptyLines.length)];
     }
 
     /**
@@ -160,11 +157,6 @@ export default class PathController {
         if (deletingRows.length < maxHeight) return;
 
         deletingRows.forEach(row => {
-            console.log("____");
-            console.log(deletingRows);
-            deletingRows.forEach(row => console.log("deleting rows", row))
-            console.log("check row", row._id)
-            //TODO: чистить найденные препятствия
             row._cells.forEach(cell => {
                 if (cell._enemy !== null) {
                     const {dims} = cell._enemySettings;
@@ -173,21 +165,12 @@ export default class PathController {
                 }
             });
 
-            console.log("ROWS", this._rows);
-            debugger
-
             if (row._cells.every(cell => cell._enemy === null)) {
-                console.log("no enemies in row", row._id);
-                debugger
-
                 const deleteIndex = this._rows.indexOf(row);
                 this._rows.splice(deleteIndex, 1);
 
                 itemsFactory.pushItem(row);
             }
-
-            console.log("ROWS AFTER PUSH ITEM", this._rows);
-            debugger
         });
     }
 
@@ -195,39 +178,20 @@ export default class PathController {
     clearEnemyByMatrix(startCell) {
         const {matrix} = startCell._enemySettings;
 
-        console.log("________");
-        console.log("clear enemy by matrix!!!");
-        console.log(`DELETE: row: ${startCell._row}, column: ${startCell._column}`);
-        console.log(`enemy uuid`, startCell._enemy.uuid);
-        debugger
-
         itemsFactory.pushItem(startCell._enemy);
 
         for (let row = 0; row < matrix.length; row++) {
             for (let column = 0; column < matrix[row].length; column++) {
                 const invertedRow = matrix.length - 1 - row;
 
-                if (matrix[invertedRow][column] === 0) return;
-
-/*                if (startCell._enemy)
-                    itemsFactory.pushItem(startCell._enemy);*/
+                if (matrix[invertedRow][column] === 0) continue;
 
                 const currentCell = this.getCell(startCell._row + row, startCell._column + column);
 
-                console.log("current cell", currentCell);
-                debugger
-
                 currentCell._enemy = null;
                 currentCell._enemySettings = null;
-
-                console.log("current cell AFTER", currentCell);
-                debugger
             }
         }
-
-
-        console.log("ROWS", this._rows);
-        debugger
     }
 
     /**
@@ -284,11 +248,6 @@ export default class PathController {
 
                         if (!this.checkMatricesIntersects(row, column, matrix)) {
                             const enemy = this.createEnemy(row, column, enemySettings);
-
-                            console.log("CREATE enemy", row, column);
-                            console.log("enemy uuid:", enemy.uuid);
-                            console.log("______");
-                            debugger
 
                             this.editCellsMatrix(row, column, enemy, enemySettings);
                             scene.add(enemy);
@@ -419,7 +378,6 @@ export default class PathController {
         const nearRowsFiltered = this._rows.filter(({_id}) => _id * step - hero.position.x < 3);
 
         nearRowsFiltered.forEach(row => {
-            //     console.log(row);
             row._cells.forEach(cell => {
                 if (cell._enemy) {
                     //const collided = this.checkCollision(hero, cell);
