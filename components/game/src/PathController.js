@@ -4,11 +4,15 @@ import {itemsFactory} from "./ItemsFactory";
 import {randomIntFromRange} from "../../../utils/number/randomIntFromRange";
 import SAT from "sat";
 import {MeshBasicMaterial} from "three";
+import gsap from "gsap";
 
-//TODO: убрать возможность ставить препятствие на блок перед сменой дорожки
-// исправить: пропадают желтые препятствия до проезда через них
-
-//TODO: прочекать параметр visibilityInMetres!!!
+//TODO: приостанавливать игру после столкновения
+/*
+врезание, чтобы скорость падала в 0,
+камера чуть дальше проходила относительно персонажа и
+потом медленный набор скорости,
+а противник исчезал в которого въехали
+ */
 
 export default class PathController {
     /**
@@ -174,7 +178,6 @@ export default class PathController {
         });
     }
 
-    //TODO: проверить метод
     clearEnemyByMatrix(startCell) {
         const {matrix} = startCell._enemySettings;
 
@@ -199,8 +202,6 @@ export default class PathController {
      * @param scene сцена
      * @param hero игрок (куб)
      */
-    //TODO: ОШИБКА В ЭТОМ МЕТОДЕ!
-    // ошибка зависит от visibilityInMetres
     fieldCheckAndFill(scene, hero) {
         const {visibilityInMetres, step} = baseSettings;
         const {maxHeight} = enemies;
@@ -378,11 +379,14 @@ export default class PathController {
                 if (cell._enemy) {
                     const collided = this.checkCollision(hero, cell);
                     if (collided) {
-                        console.log("ячейка пересечения:", cell);
+                        //          console.log("ячейка пересечения:", cell);
                         this._collided = collided;
-                        console.log("collided");
-                        this.createTestSAT(hero, cell, scene);
-                        debugger
+
+                        this.stopGameByCollision(hero, camera, cell);
+
+                        /*          console.log("collided");
+                                  this.createTestSAT(hero, cell, scene);
+                                  debugger*/
                     }
                 }
             })
@@ -394,6 +398,93 @@ export default class PathController {
         if (hero.position.x > backOffset)
             lines.forEach(line => line.position.x += this._speed);
     }
+
+    //TODO: приостановить игрока, анимированно быстро подвигать в стороны
+    // камера проезжает чуть вперед
+    // препятствие удаляется, перед этим поморгав
+    // игрок движется вперед, начиная с низкой скорости
+    stopGameByCollision(hero, camera, cell) {
+        Promise.all([
+            this.cameraMoving(camera),
+            this.heroCollisionAnimation(hero)
+        ]).then(() => {
+            this.clearEnemy(cell);
+        })
+
+    }
+
+    clearEnemy(cell) {
+        this.blinkAnimation(cell._enemy).then(() => {
+            //TODO: удаление enemy
+        })
+    }
+
+    blinkAnimation(enemy) {
+        console.log(enemy);
+        debugger
+
+        //TODO: неверно работает анимация моргания
+        const mesh = enemy.children.find(child => child.type === "Mesh");
+
+        return new Promise(resolve => {
+            const timeline = gsap.timeline({repeat: 2, yoyo: true, onComplete: resolve});
+
+            timeline
+                .to(mesh.material, {
+                    opacity: 0,
+                    duration: 0.2,
+                    ease: "sine.inOut"
+                })
+                .to(mesh.material, {
+                    opacity: 1,
+                    duration: 0.2,
+                    ease: "sine.inOut"
+                })
+        })
+    }
+
+    cameraMoving(camera) {
+        const duration = 1;
+        const path = baseSettings.step * 1.5;
+
+        return new Promise(resolve => {
+            gsap.to(camera.position, {
+                x: camera.position.x + path,
+                duration,
+                ease: "sine.out",
+                onComplete: resolve
+            })
+        })
+    }
+
+    heroCollisionAnimation(hero) {
+        const lineHeight = baseSettings.field.lineSize.height;
+        const offsetValue = lineHeight * 0.2;
+
+        return new Promise(resolve => {
+            const timeline = gsap.timeline({repeat: 1, onComplete: resolve});
+
+            const duration = 0.075;
+
+            timeline
+                .to(hero.position, {
+                    z: hero.position.z - offsetValue,
+                    duration,
+                    ease: "sine.in"
+                })
+                .to(hero.position, {
+                    z: hero.position.z + offsetValue,
+                    duration: duration * 2,
+                    ease: "sine.in"
+                })
+                .to(hero.position, {
+                    z: hero.position.z,
+                    duration,
+                    ease: "sine.in"
+                })
+        });
+    }
+
 
     checkCollision(hero, cell) {
         const {
