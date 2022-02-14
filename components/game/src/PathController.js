@@ -444,16 +444,22 @@ export default class PathController {
     }
 
     cameraMoving(camera) {
-        const duration = 1;
-        const path = baseSettings.step * 1.5;
+        const {speed} = baseSettings;
 
-        return new Promise(resolve => {
-            gsap.to(camera.position, {
-                x: camera.position.x + path,
-                duration,
-                ease: "sine.out",
-                onComplete: resolve
-            })
+        const duration = 1;
+        const path = baseSettings.step * 1.5 * this._speed * 10;
+
+        const ticks = duration * 1000 / 16;
+        const speedDeltaPerSecond = this._speed / ticks;
+
+        gsap.to(camera.position, {
+            x: camera.position.x + path,
+            onUpdate: () => {
+                this._speed = Math.max(speed.min, this._speed - speedDeltaPerSecond);
+                camera.position.x += this._speed;
+            },
+            ease: "sine.out",
+            duration
         })
     }
 
@@ -463,7 +469,6 @@ export default class PathController {
 
         return new Promise(resolve => {
             const timeline = gsap.timeline({repeat: 1, onComplete: resolve});
-
             const duration = 0.075;
 
             timeline
