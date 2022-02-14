@@ -407,38 +407,64 @@ export default class PathController {
         Promise.all([
             this.cameraMoving(camera),
             this.heroCollisionAnimation(hero)
-        ]).then(() => {
-            this.clearEnemy(cell);
-        })
+        ]).then(() => this.clearEnemy(cell)
+        ).then(() => console.log("huita"))
 
     }
 
     clearEnemy(cell) {
-        this.blinkAnimation(cell._enemy).then(() => {
-            //TODO: удаление enemy
+        return this.blinkAnimation(cell._enemy).then(() => {
+            const uuid = cell._enemy.uuid;
+
+            const cellsStorage = itemsFactory.getStorage("cell");
+            const usedCells = cellsStorage.createdItems.filter(cell => !cellsStorage.items.includes(cell));
+            const enemyCells = usedCells.filter(cell => cell._enemy?.uuid === uuid);
+
+            const startCell = enemyCells.find(cell =>
+                cell._row === Math.min(...enemyCells.map(cell => cell._row)) &&
+                cell._column === Math.min(...enemyCells.map(cell => cell._column))
+            );
+
+            this.clearEnemyByMatrix(startCell);
         })
     }
 
     blinkAnimation(enemy) {
-        console.log(enemy);
-        debugger
+        const duration = 0.25;
+        const ease = "sine.inOut";
 
-        //TODO: неверно работает анимация моргания
         const mesh = enemy.children.find(child => child.type === "Mesh");
 
+        function fadeOut(item) {
+            return new Promise(resolve => {
+                gsap.to(item, {
+                    opacity: 0,
+                    duration,
+                    ease,
+                    onComplete: resolve
+                })
+            })
+        }
+
         return new Promise(resolve => {
-            const timeline = gsap.timeline({repeat: 2, yoyo: true, onComplete: resolve});
+            const timeline = gsap.timeline({
+                repeat: 2,
+                yoyo: true,
+                onComplete: () => {
+                    fadeOut(mesh.material).then(resolve)
+                }
+            });
 
             timeline
                 .to(mesh.material, {
                     opacity: 0,
-                    duration: 0.2,
-                    ease: "sine.inOut"
+                    duration,
+                    ease
                 })
                 .to(mesh.material, {
                     opacity: 1,
-                    duration: 0.2,
-                    ease: "sine.inOut"
+                    duration,
+                    ease
                 })
         })
     }
